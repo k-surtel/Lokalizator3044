@@ -15,4 +15,8 @@
     <string name="str_name">Nazwa</string>
     <string name="str_ringtone">Dzwonek</string>
     <string name="str_button">Akcja przycisku</string>
+    <string name="str_cancel">Anuluj</string>
+    <string name="str_save">Zapisz</string>
+    <string name="str_saveforall">Zapisz dla wszystkich</string>
+    <string name="str_savecustom">Wybierz iTagi</string>
 </resources>

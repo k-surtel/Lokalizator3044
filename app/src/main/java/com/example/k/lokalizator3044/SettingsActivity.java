@@ -41,20 +41,32 @@ public class SettingsActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         //(☞ ͡° ͜ʖ ͡°)☞ LISTY ROZWIJANE - SPINNER
-        Spinner spinner = (Spinner) findViewById(R.id.spinner);
+        Spinner modeSpinner = (Spinner)findViewById(R.id.edit_mode_spinner);
         // Create an ArrayAdapter using the string array and a default spinner layout
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
-                R.array.planets_array, android.R.layout.simple_spinner_item);
+        ArrayAdapter<CharSequence> modeAdapter = ArrayAdapter.createFromResource(this,
+                R.array.mode_array, android.R.layout.simple_spinner_item);
         // Specify the layout to use when the list of choices appears
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        modeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         // Apply the adapter to the spinner
-        spinner.setAdapter(adapter);
+        modeSpinner.setAdapter(modeAdapter);
 
-        Spinner spinner2 = (Spinner) findViewById(R.id.spinner2);
-        ArrayAdapter<CharSequence> adapter2 = ArrayAdapter.createFromResource(this,
-                R.array.dzwonki, android.R.layout.simple_spinner_item);
-        adapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner2.setAdapter(adapter2);
+        Spinner ringtoneSpinner = (Spinner)findViewById(R.id.edit_ringtone_spinner);
+        ArrayAdapter<CharSequence> ringtoneAdapter = ArrayAdapter.createFromResource(this,
+                R.array.ringtones_array, android.R.layout.simple_spinner_item);
+        ringtoneAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        ringtoneSpinner.setAdapter(ringtoneAdapter);
+
+        Spinner distanceSpinner = (Spinner)findViewById(R.id.edit_distance_spinner);
+        ArrayAdapter<CharSequence> distanceAdapter = ArrayAdapter.createFromResource(this,
+                R.array.distance_array, android.R.layout.simple_spinner_item);
+        distanceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        distanceSpinner.setAdapter(distanceAdapter);
+
+        Spinner buttonSpinner = (Spinner)findViewById(R.id.edit_button_spinner);
+        ArrayAdapter<CharSequence> buttonAdapter = ArrayAdapter.createFromResource(this,
+                R.array.button_array, android.R.layout.simple_spinner_item);
+        buttonAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        buttonSpinner.setAdapter(buttonAdapter);
     }
 
     //(☞ ͡° ͜ʖ ͡°)☞ NIE WIEM

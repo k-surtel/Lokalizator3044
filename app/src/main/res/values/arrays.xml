@@ -1,18 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="planets_array">
-        <item>Mercury</item>
-        <item>Venus</item>
-        <item>Earth</item>
-        <item>Mars</item>
-        <item>Jupiter</item>
-        <item>Saturn</item>
-        <item>Uranus</item>
-        <item>Neptune</item>
+    <string-array name="mode_array">
+        <item>Tryb cichy</item>
+        <item>Tryb głośnt</item>
     </string-array>
 
-    <string-array name="dzwonki">
+    <string-array name="ringtones_array">
         <item>Rechotanie żab</item>
         <item>Histeryczny śmiech</item>
+    </string-array>
+
+    <string-array name="distance_array">
+        <item>500 km</item>
+        <item>20 000 mil</item>
+    </string-array>
+
+    <string-array name="button_array">
+        <item>Zrób zdjęcie</item>
+        <item>Odpal rakietę</item>
     </string-array>
 </resources>
