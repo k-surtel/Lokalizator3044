@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Lokalizator 3044</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="men_itag_list">Lista iTagów</string>
+    <string name="men_settings">Ustawienia</string>
+    <string name="men_about">O aplikacji</string>
+    <string name="str_mode">Tryb pracy</string>
+</resources>
