@@ -9,4 +9,10 @@
     <string name="men_settings">Ustawienia</string>
     <string name="men_about">O aplikacji</string>
     <string name="str_mode">Tryb pracy</string>
+    <string name="str_sound">Dźwięk dzwonka</string>
+    <string name="str_distance">Odległość reakcji</string>
+    <string name="str_avatar">Avatar</string>
+    <string name="str_name">Nazwa</string>
+    <string name="str_ringtone">Dzwonek</string>
+    <string name="str_button">Akcja przycisku</string>
 </resources>

@@ -23,7 +23,10 @@
     <include layout="@layout/content_about"
         android:id="@+id/about_content"/>
     <include layout="@layout/content_settings"
-        android:id="@+id/settings_content"/>
+        android:id="@+id/settings_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
 
 </android.support.design.widget.CoordinatorLayout>
