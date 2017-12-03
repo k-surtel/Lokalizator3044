@@ -39,8 +39,8 @@ public class AboutActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
     }
 
-    //(☞ ͡° ͜ʖ ͡°)☞ NIE WIEM
-    /*@Override
+    //(☞ ͡° ͜ʖ ͡°)☞ CHOWAJKA WYSUWANEGO PANELU
+    @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
@@ -48,7 +48,7 @@ public class AboutActivity extends AppCompatActivity
         } else {
             super.onBackPressed();
         }
-    }*/
+    }
 
     //(☞ ͡° ͜ʖ ͡°)☞ POKAZUJE TE OPCJE PO PRAWEJ NA TOOLBARZE
     @Override

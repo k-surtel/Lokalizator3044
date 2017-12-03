@@ -1,9 +1,12 @@
 package com.example.k.lokalizator3044;
 
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -16,6 +19,13 @@ import android.view.MenuItem;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+
+    BluetoothManager mBluetoothManager;
+    BluetoothAdapter mBluetoothAdapter;
+    BluetoothLeScanner mBluetoothScanner;
+
+    private final static int REQUEST_ENABLE_BT = 1;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,8 +41,10 @@ public class MainActivity extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
+                Intent intent = new Intent(getApplicationContext(), ScanningActivity.class);
                 startActivity(intent);
+
+
             }
         });
 
@@ -45,10 +57,22 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        mBluetoothAdapter = mBluetoothManager.getAdapter();
+        mBluetoothScanner = mBluetoothAdapter.getBluetoothLeScanner();
+
+        //(☞ ͡° ͜ʖ ͡°)☞ REQUEST ENABLE BLUETOOTH
+        // Ensures Bluetooth is available on the device and it is enabled. If not,
+        // displays a dialog requesting user permission to enable Bluetooth.
+        if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+        }
     }
 
-    //(☞ ͡° ͜ʖ ͡°)☞ NIE WIEM
-    /*@Override
+    //(☞ ͡° ͜ʖ ͡°)☞ CHOWAJKA PANELU WYSUWANEGO
+    @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
@@ -56,7 +80,7 @@ public class MainActivity extends AppCompatActivity
         } else {
             super.onBackPressed();
         }
-    }*/
+    }
 
     //(☞ ͡° ͜ʖ ͡°)☞ POKAZUJE TE OPCJE PO PRAWEJ NA TOOLBARZE
     @Override

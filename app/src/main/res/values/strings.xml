@@ -19,4 +19,5 @@
     <string name="str_save">Zapisz</string>
     <string name="str_saveforall">Zapisz dla wszystkich</string>
     <string name="str_savecustom">Wybierz iTagi</string>
+    <string name="str_double_click">Akcja dwukliku</string>
 </resources>
