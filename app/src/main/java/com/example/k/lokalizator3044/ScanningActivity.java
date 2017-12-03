@@ -20,16 +20,22 @@ import android.os.AsyncTask;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.method.ScrollingMovementMethod;
+import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.ListView;
+import android.widget.Toast;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 
@@ -40,17 +46,22 @@ public class ScanningActivity extends AppCompatActivity {
     BluetoothLeScanner btScanner;
     Button startScanningButton;
     Button stopScanningButton;
-    TextView peripheralTextView;
     private final static int REQUEST_ENABLE_BT = 1;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
 
     Boolean btScanning = false;
     int deviceIndex = 0;
     ArrayList<BluetoothDevice> devicesDiscovered = new ArrayList<BluetoothDevice>();
+
+    ArrayList<String> foundItags = new ArrayList<>();
+    ArrayList<String> foundIds = new ArrayList<>();
+    ArrayAdapter<String> adapter;
+
     EditText deviceIndexInput;
     Button connectToDevice;
     Button disconnectDevice;
     BluetoothGatt bluetoothGatt;
+    ListView iTagsList;
 
     public final static String ACTION_GATT_CONNECTED =
             "com.example.bluetooth.le.ACTION_GATT_CONNECTED";
@@ -79,16 +90,26 @@ public class ScanningActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scanning);
 
-        peripheralTextView = (TextView) findViewById(R.id.PeripheralTextView);
-        peripheralTextView.setMovementMethod(new ScrollingMovementMethod());
         deviceIndexInput = (EditText) findViewById(R.id.InputIndex);
+        iTagsList = (ListView)findViewById(R.id.found_itags_list);
+        iTagsList.setOnItemClickListener(new AdapterView.OnItemClickListener(){
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
+                intent.putExtra("itag", devicesDiscovered.get(i));
+                startActivity(intent);
+                //Toast.makeText(ScanningActivity.this, "pozycja:"+i, Toast.LENGTH_LONG).show();
+
+                //connectToDeviceSelected(i);
+            }
+        });
 
         connectToDevice = (Button) findViewById(R.id.ConnectButton);
-        connectToDevice.setOnClickListener(new View.OnClickListener() {
+        /*connectToDevice.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 connectToDeviceSelected();
             }
-        });
+        });*/
 
         disconnectDevice = (Button) findViewById(R.id.DisconnectButton);
         disconnectDevice.setVisibility(View.INVISIBLE);
@@ -137,24 +158,60 @@ public class ScanningActivity extends AppCompatActivity {
             builder.show();
         }
 
+        //(☞ ͡° ͜ʖ ͡°)☞ TOOLBAR - TEN PASEK NA GÓRZE
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+
+        startScanning();
     }
 
-    // Device scan callback.
+    //(☞ ͡° ͜ʖ ͡°)☞ POKAZUJE TE OPCJE PO PRAWEJ NA TOOLBARZE
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.main_refresh, menu);
+        return true;
+    }
+
+    //(☞ ͡° ͜ʖ ͡°)☞ POSZCZEGÓLNE OPCJE Z PRZYCISKU PO PRAWEJ NA TOOLBARZE
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_reload) {
+            startScanning();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    //(☞ ͡° ͜ʖ ͡°)☞ DEVICE SCAN CALLBACK - WYNIKI WYSZUKANIA URZĄDZEŃ
     private ScanCallback leScanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
-            peripheralTextView.append("Index: " + deviceIndex + ", Device Name: " + result.getDevice().getName() + " rssi: " + result.getRssi() + "\n");
-            devicesDiscovered.add(result.getDevice());
-            deviceIndex++;
-            // auto scroll for text view
-            final int scrollAmount = peripheralTextView.getLayout().getLineTop(peripheralTextView.getLineCount()) - peripheralTextView.getHeight();
-            // if there is no need to scroll, scrollAmount will be <=0
-            if (scrollAmount > 0) {
-                peripheralTextView.scrollTo(0, scrollAmount);
+            if (!foundIds.contains(result.getDevice().getAddress())) {
+                foundIds.add(result.getDevice().getAddress());
+                foundItags.add(result.getDevice().getName());
+                devicesDiscovered.add(result.getDevice());
+                deviceIndex++;
+                adaptujListe();
+                Log.d("ID: ", result.getDevice().getAddress());
             }
         }
     };
+
+    //(☞ ͡° ͜ʖ ͡°)☞ WYPEŁNIA LISTĘ WYNIKAMI - ZMIEŃ NAZWĘ..................
+    void adaptujListe() {
+        adapter = new ArrayAdapter<String>(this, R.layout.raw_itag, R.id.raw_itag_name, foundItags);
+        iTagsList.setAdapter(adapter);
+    }
 
     // Device connect call back
     private final BluetoothGattCallback btleGattCallback = new BluetoothGattCallback() {
@@ -164,7 +221,7 @@ public class ScanningActivity extends AppCompatActivity {
             // this will get called anytime you perform a read or write characteristic operation
             ScanningActivity.this.runOnUiThread(new Runnable() {
                 public void run() {
-                    peripheralTextView.append("device read or wrote to\n");
+                    //peripheralTextView.append("device read or wrote to\n");
                 }
             });
         }
@@ -177,7 +234,7 @@ public class ScanningActivity extends AppCompatActivity {
                 case 0:
                     ScanningActivity.this.runOnUiThread(new Runnable() {
                         public void run() {
-                            peripheralTextView.append("device disconnected\n");
+                            //peripheralTextView.append("device disconnected\n");
                             connectToDevice.setVisibility(View.VISIBLE);
                             disconnectDevice.setVisibility(View.INVISIBLE);
                         }
@@ -186,7 +243,7 @@ public class ScanningActivity extends AppCompatActivity {
                 case 2:
                     ScanningActivity.this.runOnUiThread(new Runnable() {
                         public void run() {
-                            peripheralTextView.append("device connected\n");
+                            //peripheralTextView.append("device connected\n");
                             connectToDevice.setVisibility(View.INVISIBLE);
                             disconnectDevice.setVisibility(View.VISIBLE);
                         }
@@ -199,7 +256,7 @@ public class ScanningActivity extends AppCompatActivity {
                 default:
                     ScanningActivity.this.runOnUiThread(new Runnable() {
                         public void run() {
-                            peripheralTextView.append("we encounterned an unknown state, uh oh\n");
+                            //peripheralTextView.append("we encounterned an unknown state, uh oh\n");
                         }
                     });
                     break;
@@ -211,7 +268,7 @@ public class ScanningActivity extends AppCompatActivity {
             // this will get called after the client initiates a 			BluetoothGatt.discoverServices() call
             ScanningActivity.this.runOnUiThread(new Runnable() {
                 public void run() {
-                    peripheralTextView.append("device services have been discovered\n");
+                   // peripheralTextView.append("device services have been discovered\n");
                 }
             });
             displayGattServices(bluetoothGatt.getServices());
@@ -259,13 +316,14 @@ public class ScanningActivity extends AppCompatActivity {
         }
     }
 
+    //(☞ ͡° ͜ʖ ͡°)☞ START WYSZUKIWANIA URZĄDZEŃ
     public void startScanning() {
-        System.out.println("start scanning");
+        Toast.makeText(ScanningActivity.this, "Trwa wyszukiwanie urządzeń", Toast.LENGTH_SHORT).show();
         btScanning = true;
         deviceIndex = 0;
         devicesDiscovered.clear();
-        peripheralTextView.setText("");
-        peripheralTextView.append("Started Scanning\n");
+        //peripheralTextView.setText("");
+        //peripheralTextView.append("Started Scanning\n");
         startScanningButton.setVisibility(View.INVISIBLE);
         stopScanningButton.setVisibility(View.VISIBLE);
         AsyncTask.execute(new Runnable() {
@@ -283,9 +341,10 @@ public class ScanningActivity extends AppCompatActivity {
         }, SCAN_PERIOD);
     }
 
+    //(☞ ͡° ͜ʖ ͡°)☞ STOP WYSZUKIWANIA URZĄDZEŃ
     public void stopScanning() {
         System.out.println("stopping scanning");
-        peripheralTextView.append("Stopped Scanning\n");
+        //peripheralTextView.append("Stopped Scanning\n");
         btScanning = false;
         startScanningButton.setVisibility(View.VISIBLE);
         stopScanningButton.setVisibility(View.INVISIBLE);
@@ -297,14 +356,14 @@ public class ScanningActivity extends AppCompatActivity {
         });
     }
 
-    public void connectToDeviceSelected() {
-        peripheralTextView.append("Trying to connect to device at index: " + deviceIndexInput.getText() + "\n");
-        int deviceSelected = Integer.parseInt(deviceIndexInput.getText().toString());
+    public void connectToDeviceSelected(int deviceSelected) {
+        //peripheralTextView.append("Trying to connect to device at index: " + deviceIndexInput.getText() + "\n");
+        //int deviceSelected = Integer.parseInt(deviceIndexInput.getText().toString());
         bluetoothGatt = devicesDiscovered.get(deviceSelected).connectGatt(this, false, btleGattCallback);
     }
 
     public void disconnectDeviceSelected() {
-        peripheralTextView.append("Disconnecting from device\n");
+        //peripheralTextView.append("Disconnecting from device\n");
         bluetoothGatt.disconnect();
     }
 
@@ -318,7 +377,7 @@ public class ScanningActivity extends AppCompatActivity {
             System.out.println("Service discovered: " + uuid);
             ScanningActivity.this.runOnUiThread(new Runnable() {
                 public void run() {
-                    peripheralTextView.append("Service disovered: "+uuid+"\n");
+                    //peripheralTextView.append("Service disovered: "+uuid+"\n");
                 }
             });
             new ArrayList<HashMap<String, String>>();
@@ -333,7 +392,7 @@ public class ScanningActivity extends AppCompatActivity {
                 System.out.println("Characteristic discovered for service: " + charUuid);
                 ScanningActivity.this.runOnUiThread(new Runnable() {
                     public void run() {
-                        peripheralTextView.append("Characteristic discovered for service: "+charUuid+"\n");
+                        //peripheralTextView.append("Characteristic discovered for service: "+charUuid+"\n");
                     }
                 });
 
