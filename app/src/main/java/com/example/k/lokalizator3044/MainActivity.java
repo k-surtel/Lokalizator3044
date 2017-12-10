@@ -98,18 +98,15 @@ public class MainActivity extends AppCompatActivity
             builder.show();
         }
     }
-
     public boolean isBluetoothEnable() {
         if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
             return false;
         } else return true;
     }
-
     public void requestBluetoothEnable() {
         Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
         startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
     }
-
     public void requestLocationPermission() {
         if (!(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)) {
             requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_REQUEST_FINE_LOCATION);
@@ -123,10 +120,9 @@ public class MainActivity extends AppCompatActivity
         itagList.setAdapter(cursorAdapter);
         getLoaderManager().initLoader(0, null, this);
     }
-
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        String[] projekcja = { DBHelper.ID,DBHelper.MAC_ADDRESS, DBHelper.NAME, DBHelper.WORKING_MODE, DBHelper.RINGTONE, DBHelper.DISTANCE, DBHelper.CLICK, DBHelper.DOUBLE_CLICK, DBHelper.IF_ENABLED };
+        String[] projekcja = { DBHelper.ID, DBHelper.MAC_ADDRESS, DBHelper.NAME, DBHelper.WORKING_MODE, DBHelper.RINGTONE, DBHelper.DISTANCE, DBHelper.CLICK, DBHelper.DOUBLE_CLICK, DBHelper.IF_ENABLED };
         CursorLoader loaderKursora = new CursorLoader(this, MyContentProvider.URI_ZAWARTOSCI, projekcja, null,null, null);
         return loaderKursora;
     }

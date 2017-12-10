@@ -107,7 +107,7 @@ public class AddingActivity extends AppCompatActivity {
         saveBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                /*ContentValues values = new ContentValues();
+                ContentValues values = new ContentValues();
                 values.put(DBHelper.MAC_ADDRESS, connectedDevice.getAddress().toString());
                 values.put(DBHelper.NAME, addName.getText().toString());
                 values.put(DBHelper.WORKING_MODE, modeSpinner.getSelectedItem().toString());
@@ -116,13 +116,13 @@ public class AddingActivity extends AppCompatActivity {
                 values.put(DBHelper.WORKING_MODE, modeSpinner.getSelectedItem().toString());
                 values.put(DBHelper.CLICK, clickSpinner.getSelectedItem().toString());
                 values.put(DBHelper.DOUBLE_CLICK, doubleClickSpinner.getSelectedItem().toString());
-                values.put(DBHelper.IF_ENABLED, "true");*/
+                values.put(DBHelper.IF_ENABLED, "true");
                 //if(ifEdit) getContentResolver().update(uri, values, null, null);
                 //else {
-                    final AlertDialog.Builder builder = new AlertDialog.Builder(getApplicationContext());
+                   /* final AlertDialog.Builder builder = new AlertDialog.Builder(AddingActivity.this);
                     builder.setTitle("XOXO");
-                    builder.setMessage("Mac address: "+connectedDevice.getAddress().toString()+"/nName: "+addName.getText().toString());
-                    builder.setPositiveButton(android.R.string.ok, null);
+                builder.setMessage(new StringBuilder().append("Mac address: " + connectedDevice.getAddress().toString() + "\nName: " + addName.getText().toString()).append("\nWorking mode: ").append(modeSpinner.getSelectedItem().toString()).toString());
+                builder.setPositiveButton(android.R.string.ok, null);
                     builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
 
                         @Override
@@ -130,9 +130,10 @@ public class AddingActivity extends AppCompatActivity {
                         }
 
                     });
-                    builder.show();
+                    builder.show();*/
 
-                    //getContentResolver().insert(MyContentProvider.URI_ZAWARTOSCI, values);
+                    getContentResolver().insert(MyContentProvider.URI_ZAWARTOSCI, values);
+                Toast.makeText(AddingActivity.this, "Przycisk", Toast.LENGTH_SHORT).show();
                //}
 
                 //Intent intent = new Intent(getApplicationContext(), MainActivity.class);
