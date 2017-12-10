@@ -75,7 +75,9 @@ public class ScanningActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
                 intent.putExtra("itag", devicesDiscovered.get(i));
+                intent.putExtra("edit", false);
                 startActivity(intent);
+                finish();
             }
         });
 

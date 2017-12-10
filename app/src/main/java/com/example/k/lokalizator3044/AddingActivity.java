@@ -1,16 +1,21 @@
 package com.example.k.lokalizator3044;
 
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
+import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 import android.widget.Toolbar;
@@ -21,8 +26,19 @@ import java.util.List;
 
 public class AddingActivity extends AppCompatActivity {
 
+    boolean ifEdit;
+
+    EditText addName;
+    Spinner modeSpinner;
+    Spinner ringtoneSpinner;
+    Spinner distanceSpinner;
+    Spinner clickSpinner;
+    Spinner doubleClickSpinner;
+
     Button cancelBtn;
     Button saveBtn;
+
+    Uri uri;
 
     BluetoothDevice connectedDevice;
     BluetoothGatt bluetoothGatt;
@@ -37,43 +53,53 @@ public class AddingActivity extends AppCompatActivity {
         //tuuuuu?
         Bundle myBundle = getIntent().getExtras();
         connectedDevice = (BluetoothDevice)myBundle.get("itag");
+        ifEdit = myBundle.getBoolean("edit");
+
         connectToDeviceSelected();
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_adding);
 
+        addName = (EditText)findViewById(R.id.add_name);
+
         //(☞ ͡° ͜ʖ ͡°)☞ LISTY ROZWIJANE - SPINNERY
-        Spinner modeSpinner = (Spinner)findViewById(R.id.add_mode_spinner);
+        modeSpinner = (Spinner)findViewById(R.id.add_mode_spinner);
         ArrayAdapter<CharSequence> modeAdapter = ArrayAdapter.createFromResource(this,
                 R.array.mode_array, android.R.layout.simple_spinner_item);
         modeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         modeSpinner.setAdapter(modeAdapter);
 
-        Spinner ringtoneSpinner = (Spinner)findViewById(R.id.add_ringtone_spinner);
+        ringtoneSpinner = (Spinner)findViewById(R.id.add_ringtone_spinner);
         ArrayAdapter<CharSequence> ringtoneAdapter = ArrayAdapter.createFromResource(this,
                 R.array.ringtones_array, android.R.layout.simple_spinner_item);
         ringtoneAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         ringtoneSpinner.setAdapter(ringtoneAdapter);
 
-        Spinner distanceSpinner = (Spinner)findViewById(R.id.add_distance_spinner);
+        distanceSpinner = (Spinner)findViewById(R.id.add_distance_spinner);
         ArrayAdapter<CharSequence> distanceAdapter = ArrayAdapter.createFromResource(this,
                 R.array.distance_array, android.R.layout.simple_spinner_item);
         distanceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         distanceSpinner.setAdapter(distanceAdapter);
 
-        Spinner buttonSpinner = (Spinner)findViewById(R.id.add_button_spinner);
-        ArrayAdapter<CharSequence> buttonAdapter = ArrayAdapter.createFromResource(this,
+        clickSpinner = (Spinner)findViewById(R.id.add_button_spinner);
+        ArrayAdapter<CharSequence> clickAdapter = ArrayAdapter.createFromResource(this,
                 R.array.button_array, android.R.layout.simple_spinner_item);
-        buttonAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        buttonSpinner.setAdapter(buttonAdapter);
+        clickAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        clickSpinner.setAdapter(clickAdapter);
+
+        doubleClickSpinner = (Spinner)findViewById(R.id.add_button_spinner);
+        final ArrayAdapter<CharSequence> doubleClickAdapter = ArrayAdapter.createFromResource(this,
+                R.array.button_array, android.R.layout.simple_spinner_item);
+        doubleClickAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        clickSpinner.setAdapter(doubleClickAdapter);
+
+        //if ifedit trueeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee!!!!
 
         cancelBtn = findViewById(R.id.add_cancel_btn);
         cancelBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //(☞ ͡° ͜ʖ ͡°)☞ MOŻE JEDNAK WYJŚĆ Z TEGO ACTIVITY???????????????
-                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                startActivity(intent);
+                finish();
             }
         });
 
@@ -81,9 +107,36 @@ public class AddingActivity extends AppCompatActivity {
         saveBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //(☞ ͡° ͜ʖ ͡°)☞ MOŻE JEDNAK WYJŚĆ Z TEGO ACTIVITY???????????????
-                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                startActivity(intent);
+                /*ContentValues values = new ContentValues();
+                values.put(DBHelper.MAC_ADDRESS, connectedDevice.getAddress().toString());
+                values.put(DBHelper.NAME, addName.getText().toString());
+                values.put(DBHelper.WORKING_MODE, modeSpinner.getSelectedItem().toString());
+                values.put(DBHelper.RINGTONE, ringtoneSpinner.getSelectedItem().toString());
+                values.put(DBHelper.DISTANCE, distanceSpinner.getSelectedItem().toString());
+                values.put(DBHelper.WORKING_MODE, modeSpinner.getSelectedItem().toString());
+                values.put(DBHelper.CLICK, clickSpinner.getSelectedItem().toString());
+                values.put(DBHelper.DOUBLE_CLICK, doubleClickSpinner.getSelectedItem().toString());
+                values.put(DBHelper.IF_ENABLED, "true");*/
+                //if(ifEdit) getContentResolver().update(uri, values, null, null);
+                //else {
+                    final AlertDialog.Builder builder = new AlertDialog.Builder(getApplicationContext());
+                    builder.setTitle("XOXO");
+                    builder.setMessage("Mac address: "+connectedDevice.getAddress().toString()+"/nName: "+addName.getText().toString());
+                    builder.setPositiveButton(android.R.string.ok, null);
+                    builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                        }
+
+                    });
+                    builder.show();
+
+                    //getContentResolver().insert(MyContentProvider.URI_ZAWARTOSCI, values);
+               //}
+
+                //Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                //startActivity(intent);
             }
         });
 
