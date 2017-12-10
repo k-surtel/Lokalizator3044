@@ -15,8 +15,13 @@
         <item>20 000 mil</item>
     </string-array>
 
-    <string-array name="button_array">
+    <string-array name="click_array">
         <item>Zrób zdjęcie</item>
         <item>Odpal rakietę</item>
+    </string-array>
+
+    <string-array name="double_click_array">
+        <item>Zrób zdjęcie</item>
+        <item>Zablokuj telefon</item>
     </string-array>
 </resources>

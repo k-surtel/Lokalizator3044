@@ -1,14 +1,11 @@
 package com.example.k.lokalizator3044;
 
-import android.app.AlertDialog;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.content.ContentValues;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -18,7 +15,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
-import android.widget.Toolbar;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,7 +51,7 @@ public class AddingActivity extends AppCompatActivity {
         connectedDevice = (BluetoothDevice)myBundle.get("itag");
         ifEdit = myBundle.getBoolean("edit");
 
-        connectToDeviceSelected();
+        //connectToDeviceSelected();
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_adding);
@@ -83,15 +79,15 @@ public class AddingActivity extends AppCompatActivity {
 
         clickSpinner = (Spinner)findViewById(R.id.add_button_spinner);
         ArrayAdapter<CharSequence> clickAdapter = ArrayAdapter.createFromResource(this,
-                R.array.button_array, android.R.layout.simple_spinner_item);
+                R.array.click_array, android.R.layout.simple_spinner_item);
         clickAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         clickSpinner.setAdapter(clickAdapter);
 
-        doubleClickSpinner = (Spinner)findViewById(R.id.add_button_spinner);
+        doubleClickSpinner = (Spinner)findViewById(R.id.add_button_double_spinner);
         final ArrayAdapter<CharSequence> doubleClickAdapter = ArrayAdapter.createFromResource(this,
-                R.array.button_array, android.R.layout.simple_spinner_item);
+                R.array.double_click_array, android.R.layout.simple_spinner_item);
         doubleClickAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        clickSpinner.setAdapter(doubleClickAdapter);
+        doubleClickSpinner.setAdapter(doubleClickAdapter);
 
         //if ifedit trueeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee!!!!
 
@@ -107,6 +103,7 @@ public class AddingActivity extends AppCompatActivity {
         saveBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Toast.makeText(AddingActivity.this, "Przycisk", Toast.LENGTH_LONG).show();
                 ContentValues values = new ContentValues();
                 values.put(DBHelper.MAC_ADDRESS, connectedDevice.getAddress().toString());
                 values.put(DBHelper.NAME, addName.getText().toString());
@@ -128,12 +125,11 @@ public class AddingActivity extends AppCompatActivity {
                         @Override
                         public void onDismiss(DialogInterface dialog) {
                         }
-
                     });
                     builder.show();*/
 
-                    getContentResolver().insert(MyContentProvider.URI_ZAWARTOSCI, values);
-                Toast.makeText(AddingActivity.this, "Przycisk", Toast.LENGTH_SHORT).show();
+                getContentResolver().insert(MyContentProvider.URI_ZAWARTOSCI, values);
+
                //}
 
                 //Intent intent = new Intent(getApplicationContext(), MainActivity.class);

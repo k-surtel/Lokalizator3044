@@ -64,7 +64,7 @@ public class SettingsActivity extends AppCompatActivity
 
         Spinner buttonSpinner = (Spinner)findViewById(R.id.edit_button_spinner);
         ArrayAdapter<CharSequence> buttonAdapter = ArrayAdapter.createFromResource(this,
-                R.array.button_array, android.R.layout.simple_spinner_item);
+                R.array.click_array, android.R.layout.simple_spinner_item);
         buttonAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         buttonSpinner.setAdapter(buttonAdapter);
     }
