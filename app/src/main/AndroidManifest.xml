@@ -35,9 +35,9 @@
             android:theme="@style/AppTheme.NoActionBar"></activity>
         <provider
             android:name=".MyContentProvider"
-            android:authorities="com.example.k.lokalizator3044.MyContentProvider"
+            android:authorities="com.example.k.lokalizator3044"
             android:enabled="true"
-            android:exported="true">
+            android:exported="false">
         </provider>
     </application>
 

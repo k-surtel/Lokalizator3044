@@ -5,6 +5,7 @@ import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.util.Log;
 
 
 public class MyContentProvider extends android.content.ContentProvider {
@@ -28,6 +29,7 @@ public class MyContentProvider extends android.content.ContentProvider {
 
     @Override
     public Uri insert(Uri uri, ContentValues values) {
+        Log.d("LOKLIZATOR", "Insert to database!");
         int typUri = sDopasowanieUri.match(uri);
         SQLiteDatabase baza = mPomocnikBD.getWritableDatabase();
         long idDodanego = 0;

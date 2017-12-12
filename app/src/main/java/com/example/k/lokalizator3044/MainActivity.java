@@ -14,6 +14,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -25,6 +26,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.Switch;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, LoaderManager.LoaderCallbacks<Cursor> {
@@ -114,9 +116,30 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void wypelnijListe() {
-        String[] mapujZ = new String[]{DBHelper.NAME};
-        int[] mapujDo = new int[]{R.id.itag_name};
+        Log.d("LOKLIZATOR", "Wypełnij listę!");
+        String[] mapujZ = new String[]{DBHelper.NAME, DBHelper.IF_ENABLED};
+        int[] mapujDo = new int[]{R.id.itag_name, R.id.if_enabled};
         cursorAdapter = new SimpleCursorAdapter(this, R.layout.itag, null, mapujZ, mapujDo, 0);
+        cursorAdapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
+            @Override
+            public boolean setViewValue(View view, Cursor cursor, int i) {
+
+                final int enabledColumnIndex = cursor.getColumnIndexOrThrow(DBHelper.IF_ENABLED);
+                Log.d("LOKLIZATOR", "position = "+i);
+                Log.d("LOKLIZATOR", "columnIndex = "+enabledColumnIndex);
+                final int bool = cursor.getInt(i);
+
+                if (i == enabledColumnIndex) {
+                    final Switch s = (Switch)view;
+                    if(bool == 1) s.setChecked(true);
+                    return true;
+                }
+
+                //s.setOnCheckedChangeListener();
+
+                return false;
+            }
+        });
         itagList.setAdapter(cursorAdapter);
         getLoaderManager().initLoader(0, null, this);
     }

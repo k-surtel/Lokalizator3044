@@ -132,7 +132,8 @@ public class ScanningActivity extends AppCompatActivity {
         public void onScanResult(int callbackType, ScanResult result) {
             if (!foundIds.contains(result.getDevice().getAddress())) {
                 foundIds.add(result.getDevice().getAddress());
-                foundItags.add(result.getDevice().getName());
+                if (!result.getDevice().getName().equals(null)) foundItags.add(result.getDevice().getName());
+                else foundItags.add("no name");
                 devicesDiscovered.add(result.getDevice());
                 deviceIndex++;
                 adaptujListe();

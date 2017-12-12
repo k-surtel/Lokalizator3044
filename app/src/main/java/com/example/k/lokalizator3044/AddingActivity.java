@@ -9,6 +9,7 @@ import android.content.ContentValues;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -51,7 +52,7 @@ public class AddingActivity extends AppCompatActivity {
         connectedDevice = (BluetoothDevice)myBundle.get("itag");
         ifEdit = myBundle.getBoolean("edit");
 
-        //connectToDeviceSelected();
+        connectToDeviceSelected();
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_adding);
@@ -103,7 +104,7 @@ public class AddingActivity extends AppCompatActivity {
         saveBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(AddingActivity.this, "Przycisk", Toast.LENGTH_LONG).show();
+                Log.d("LOKLIZATOR", "Save button pressed!");
                 ContentValues values = new ContentValues();
                 values.put(DBHelper.MAC_ADDRESS, connectedDevice.getAddress().toString());
                 values.put(DBHelper.NAME, addName.getText().toString());
@@ -113,7 +114,7 @@ public class AddingActivity extends AppCompatActivity {
                 values.put(DBHelper.WORKING_MODE, modeSpinner.getSelectedItem().toString());
                 values.put(DBHelper.CLICK, clickSpinner.getSelectedItem().toString());
                 values.put(DBHelper.DOUBLE_CLICK, doubleClickSpinner.getSelectedItem().toString());
-                values.put(DBHelper.IF_ENABLED, "true");
+                values.put(DBHelper.IF_ENABLED, 1);
                 //if(ifEdit) getContentResolver().update(uri, values, null, null);
                 //else {
                    /* final AlertDialog.Builder builder = new AlertDialog.Builder(AddingActivity.this);
@@ -129,6 +130,7 @@ public class AddingActivity extends AppCompatActivity {
                     builder.show();*/
 
                 getContentResolver().insert(MyContentProvider.URI_ZAWARTOSCI, values);
+                finish();
 
                //}
 
@@ -144,6 +146,7 @@ public class AddingActivity extends AppCompatActivity {
         //peripheralTextView.append("Trying to connect to device at index: " + deviceIndexInput.getText() + "\n");
         //int deviceSelected = Integer.parseInt(deviceIndexInput.getText().toString());
         bluetoothGatt = connectedDevice.connectGatt(this, false, btleGattCallback);
+        Toast.makeText(AddingActivity.this, "Połączono", Toast.LENGTH_SHORT).show();
     }
 
     //(☞ ͡° ͜ʖ ͡°)☞ CALLBACK DO DEVICE CONNECT

@@ -9,7 +9,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public final static int DB_VERSION = 1;
     public final static String DB_NAME = "itagsdb.db";
-    public final static String TABLE_NAME = "itagsDB";
+    public final static String TABLE_NAME = "itagsdb";
     public final static String ID = "_id";
     public final static String MAC_ADDRESS = "macAddress";
     public final static String NAME = "name";
@@ -20,7 +20,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public final static String DOUBLE_CLICK = "doubleClick";
     public final static String IF_ENABLED = "ifEnabled";
 
-    public final static String CREATE_BASE = "CREATE TABLE "+ TABLE_NAME +"("+ID+" integer primary key autoincrement, "+ MAC_ADDRESS +" text not null, "+ NAME +" text not null, "+ WORKING_MODE +" text not null, "+ RINGTONE +" text not null, "+ DISTANCE +" text not null, "+ CLICK +" text not null, "+ DOUBLE_CLICK +" text not null, "+ IF_ENABLED +" text not null);";
+    public final static String CREATE_BASE = "CREATE TABLE "+ TABLE_NAME +"("+ID+" integer primary key autoincrement, "+ MAC_ADDRESS +" text not null, "+ NAME +" text not null, "+ WORKING_MODE +" text not null, "+ RINGTONE +" text not null, "+ DISTANCE +" text not null, "+ CLICK +" text not null, "+ DOUBLE_CLICK +" text not null, "+ IF_ENABLED +" integer not null);";
     private static final String DELETE_BASE = "DROP TABLE IF EXISTS "+ TABLE_NAME;
 
     public DBHelper(Context context) {
