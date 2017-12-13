@@ -52,7 +52,7 @@ public class AddingActivity extends AppCompatActivity {
         connectedDevice = (BluetoothDevice)myBundle.get("itag");
         ifEdit = myBundle.getBoolean("edit");
 
-        connectToDeviceSelected();
+        connectToDeviceSelected(connectedDevice);
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_adding);
@@ -114,7 +114,8 @@ public class AddingActivity extends AppCompatActivity {
                 values.put(DBHelper.WORKING_MODE, modeSpinner.getSelectedItem().toString());
                 values.put(DBHelper.CLICK, clickSpinner.getSelectedItem().toString());
                 values.put(DBHelper.DOUBLE_CLICK, doubleClickSpinner.getSelectedItem().toString());
-                values.put(DBHelper.IF_ENABLED, 1);
+                //values.put(DBHelper.IF_ENABLED, 1);
+
                 //if(ifEdit) getContentResolver().update(uri, values, null, null);
                 //else {
                    /* final AlertDialog.Builder builder = new AlertDialog.Builder(AddingActivity.this);
@@ -130,6 +131,11 @@ public class AddingActivity extends AppCompatActivity {
                     builder.show();*/
 
                 getContentResolver().insert(MyContentProvider.URI_ZAWARTOSCI, values);
+
+                //String id = uri.getQueryParameter(DBHelper.ID);
+
+                //Devices d = new Devices();
+                //d.devicesDiscovered.put(id, connectedDevice);
                 finish();
 
                //}
@@ -142,7 +148,7 @@ public class AddingActivity extends AppCompatActivity {
     }
 
     //(☞ ͡° ͜ʖ ͡°)☞ POŁĄCZENIE DO URZĄDZENIA
-    public void connectToDeviceSelected() {
+    public void connectToDeviceSelected(BluetoothDevice connectedDevice) {
         //peripheralTextView.append("Trying to connect to device at index: " + deviceIndexInput.getText() + "\n");
         //int deviceSelected = Integer.parseInt(deviceIndexInput.getText().toString());
         bluetoothGatt = connectedDevice.connectGatt(this, false, btleGattCallback);

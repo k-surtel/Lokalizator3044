@@ -18,9 +18,10 @@ public class DBHelper extends SQLiteOpenHelper {
     public final static String DISTANCE = "distance";
     public final static String CLICK = "click";
     public final static String DOUBLE_CLICK = "doubleClick";
-    public final static String IF_ENABLED = "ifEnabled";
+    //public final static String IF_ENABLED = "ifEnabled";
 
-    public final static String CREATE_BASE = "CREATE TABLE "+ TABLE_NAME +"("+ID+" integer primary key autoincrement, "+ MAC_ADDRESS +" text not null, "+ NAME +" text not null, "+ WORKING_MODE +" text not null, "+ RINGTONE +" text not null, "+ DISTANCE +" text not null, "+ CLICK +" text not null, "+ DOUBLE_CLICK +" text not null, "+ IF_ENABLED +" integer not null);";
+    //ifen
+    public final static String CREATE_BASE = "CREATE TABLE "+ TABLE_NAME +"("+ID+" integer primary key autoincrement, "+ MAC_ADDRESS +" text not null, "+ NAME +" text not null, "+ WORKING_MODE +" text not null, "+ RINGTONE +" text not null, "+ DISTANCE +" text not null, "+ CLICK +" text not null, "+ DOUBLE_CLICK +" text not null);";
     private static final String DELETE_BASE = "DROP TABLE IF EXISTS "+ TABLE_NAME;
 
     public DBHelper(Context context) {

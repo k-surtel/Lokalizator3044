@@ -74,6 +74,7 @@ public class ScanningActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
+
                 intent.putExtra("itag", devicesDiscovered.get(i));
                 intent.putExtra("edit", false);
                 startActivity(intent);
@@ -132,7 +133,7 @@ public class ScanningActivity extends AppCompatActivity {
         public void onScanResult(int callbackType, ScanResult result) {
             if (!foundIds.contains(result.getDevice().getAddress())) {
                 foundIds.add(result.getDevice().getAddress());
-                if (!result.getDevice().getName().equals(null)) foundItags.add(result.getDevice().getName());
+                if (!(result.getDevice().getName() == null)) foundItags.add(result.getDevice().getName());
                 else foundItags.add("no name");
                 devicesDiscovered.add(result.getDevice());
                 deviceIndex++;
