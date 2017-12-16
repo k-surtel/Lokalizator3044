@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
@@ -81,8 +82,14 @@ public class ItagActivity extends AppCompatActivity {
         btn2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                disconnectDeviceSelected();
-                finish();
+                while(bluetoothGatt != null && mBluetoothManager.getConnectionState(bd, BluetoothProfile.GATT) == 2) {
+                    Log.d("ItagActivity", "bGatt not null");
+                    bluetoothGatt.disconnect();
+                    //mBluetoothManager.getConnectionState(bd, BluetoothProfile.GATT);
+                    Log.d("ItagActivity", "connection state = "+mBluetoothManager.getConnectionState(bd, BluetoothProfile.GATT));
+                }
+                //bluetoothGatt = null;
+                //disconnectDeviceSelected();
             }
         });
         btn2.setVisibility(View.GONE);
@@ -99,8 +106,12 @@ public class ItagActivity extends AppCompatActivity {
 
     public void disconnectDeviceSelected() {
         Log.d("ItagActivity", "disconnectDeviceSelected()");
-        bluetoothGatt.disconnect();
-        bluetoothGatt.close();
+        if(bluetoothGatt != null) {
+            Log.d("ItagActivity", "bGatt not null");
+            bluetoothGatt.disconnect();
+            bluetoothGatt.close();
+        }
+        bluetoothGatt = null;
     }
 
     //(☞ ͡° ͜ʖ ͡°)☞ START WYSZUKIWANIA URZĄDZEŃ
@@ -150,9 +161,7 @@ public class ItagActivity extends AppCompatActivity {
         //peripheralTextView.append("Trying to connect to device at index: " + deviceIndexInput.getText() + "\n");
         //int deviceSelected = Integer.parseInt(deviceIndexInput.getText().toString());
         bluetoothGatt = bd.connectGatt(this, true, btleGattCallback);
-        Toast.makeText(ItagActivity.this, "Połączono", Toast.LENGTH_SHORT).show();
-        btn2.setVisibility(View.VISIBLE);
-        btn3.setVisibility(View.GONE);
+        Toast.makeText(ItagActivity.this, "connectToDeviceSelected", Toast.LENGTH_SHORT).show();
     }
 
     //(☞ ͡° ͜ʖ ͡°)☞ CALLBACK DO DEVICE CONNECT
@@ -178,6 +187,8 @@ public class ItagActivity extends AppCompatActivity {
                         public void run() {
                             //peripheralTextView.append("device disconnected\n");
                             Log.d("LOKLIZATOR", "ROZŁĄCZONO!!!!!!!!!!!!!!!!!!");
+                            btn2.setVisibility(View.GONE);
+                            btn3.setVisibility(View.VISIBLE);
                         }
                     });
                     break;
@@ -186,6 +197,8 @@ public class ItagActivity extends AppCompatActivity {
                         public void run() {
                             //peripheralTextView.append("device connected\n");
                             Toast.makeText(ItagActivity.this, "Połączono", Toast.LENGTH_LONG).show();
+                            btn2.setVisibility(View.VISIBLE);
+                            btn3.setVisibility(View.GONE);
                         }
                     });
 
@@ -197,6 +210,7 @@ public class ItagActivity extends AppCompatActivity {
                     ItagActivity.this.runOnUiThread(new Runnable() {
                         public void run() {
                             //peripheralTextView.append("we encounterned an unknown state, uh oh\n");
+                            Log.d("ItagActivity", "unknown state");
                         }
                     });
                     break;

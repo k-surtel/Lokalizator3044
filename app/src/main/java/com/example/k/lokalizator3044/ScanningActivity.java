@@ -153,8 +153,8 @@ public class ScanningActivity extends AppCompatActivity {
                 mBluetoothScanner.stopScan(leScanCallback);
             }
         });
-        if (newitag) startScan();
-        else adaptujListe();
+        //if (newitag) startScan();
+        adaptujListe();
     }
 
 
@@ -184,11 +184,11 @@ public class ScanningActivity extends AppCompatActivity {
                 devicesDiscovered.add(result.getDevice());
                 Log.d("ScanningActivity", "Device index in array = "+deviceIndex);
                 deviceIndex++;
-                newitag = true;
+
                 Log.d("ScanningActivity", "newitag = true");
             } else {
-                Log.d("ScanningActivity", "newitag = true");
-                newitag = false;
+                Log.d("ScanningActivity", "newitag = false");
+
             }
         }
     };
