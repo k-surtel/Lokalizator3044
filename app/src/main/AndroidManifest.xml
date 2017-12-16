@@ -2,10 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.k.lokalizator3044">
 
-    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
-    <uses-permission android:name="android.permission.BLUETOOTH"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
+        android:required="true" />
+
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
         android:allowBackup="true"
@@ -31,14 +34,17 @@
             android:name=".SettingsActivity"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity android:name=".AddingActivity" />
-        <activity android:name=".ScanningActivity"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+        <activity
+            android:name=".ScanningActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
+
         <provider
             android:name=".MyContentProvider"
             android:authorities="com.example.k.lokalizator3044"
             android:enabled="true"
-            android:exported="false">
-        </provider>
+            android:exported="false"></provider>
+
+        <activity android:name=".ItagActivity"></activity>
     </application>
 
 </manifest>

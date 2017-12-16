@@ -6,14 +6,8 @@ import android.app.LoaderManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
-import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
-import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanResult;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.CursorLoader;
 import android.content.DialogInterface;
@@ -22,7 +16,6 @@ import android.content.Loader;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
@@ -36,45 +29,39 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.AdapterView;
 import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.Switch;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, LoaderManager.LoaderCallbacks<Cursor> {
 
+
+
     BluetoothManager mBluetoothManager;
     BluetoothAdapter mBluetoothAdapter;
     BluetoothLeScanner mBluetoothScanner;
-    BluetoothGatt bluetoothGatt;
     private SimpleCursorAdapter cursorAdapter;
-
-    String checkString;
-    boolean checkCheck;
-    boolean truOrFals;
-
-    Devices d;
     Uri uri;
-
     private Handler mHandler = new Handler();
     //(☞ ͡° ͜ʖ ͡°)☞ STOPS SCANNING AFTER 5 SECONDS
     private static final long SCAN_PERIOD = 5000;
-
     ListView itagList;
-
-
     private final static int REQUEST_ENABLE_BT = 1;
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 1;
-
-    //(☞ ͡° ͜ʖ ͡°)☞ NIE WIEM
     public final static String ACTION_DATA_AVAILABLE =
             "com.example.bluetooth.le.ACTION_DATA_AVAILABLE";
+
+
+
+
+    public HashMap<String, BluetoothDevice> bleDevices;
+    ArrayList<BluetoothGatt> bg;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,6 +71,10 @@ public class MainActivity extends AppCompatActivity
         mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         mBluetoothScanner = mBluetoothAdapter.getBluetoothLeScanner();
+
+        checkBleSupport();
+        if(!isBluetoothEnable()) requestBluetoothEnable();
+        requestLocationPermission();
 
         //(☞ ͡° ͜ʖ ͡°)☞ TOOLBAR - TEN PASEK NA GÓRZE
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -96,7 +87,7 @@ public class MainActivity extends AppCompatActivity
             public void onClick(View view) {
                 if(isBluetoothEnable()) {
                     Intent intent = new Intent(getApplicationContext(), ScanningActivity.class);
-                    startActivity(intent);
+                    startActivityForResult(intent, 1);
                 } else {
                     requestBluetoothEnable();
                 }
@@ -112,15 +103,31 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        d = new Devices();
-        d.devicesDiscovered.clear();
+        bleDevices = new HashMap<>();
 
         itagList = (ListView)findViewById(R.id.itag_list);
         wypelnijListe();
 
-        checkBleSupport();
-        if(!isBluetoothEnable()) requestBluetoothEnable();
-        requestLocationPermission();
+        itagList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                //Toast.makeText(MainActivity.this, "Click id = "+id, Toast.LENGTH_SHORT).show();
+                Log.d("MainActivity", "Click id = "+id);
+                uri = Uri.parse(MyContentProvider.URI_ZAWARTOSCI+"/"+id);
+                Cursor c = getContentResolver().query(uri,new String[] {DBHelper.BD_ADDRESS}, null, null, null);
+                c.moveToFirst();
+                Log.d("MainActivity", "Click address = "+c.getString(c.getColumnIndex(DBHelper.BD_ADDRESS)));
+                c.close();
+
+                Intent mIntent = new Intent(MainActivity.this, ItagActivity.class);
+                mIntent.putExtra("dev", uri);
+                mIntent.putExtra("a", true);
+                //mIntent.putExtra("item", item);
+                // MainActivity.this.startActivityForResult(mIntent, 1);
+                startActivity(mIntent);
+            }
+        });
     }
 
     public void checkBleSupport() {
@@ -157,7 +164,7 @@ public class MainActivity extends AppCompatActivity
     private void wypelnijListe() {
         Log.d("LOKLIZATOR", "Wypełnij listę!");
         //ifen
-        String[] mapujZ = new String[]{DBHelper.NAME, DBHelper.MAC_ADDRESS};
+        String[] mapujZ = new String[]{DBHelper.NAME, DBHelper.BD_ADDRESS};
         int[] mapujDo = new int[]{R.id.itag_name, R.id.if_enabled};
         cursorAdapter = new SimpleCursorAdapter(this, R.layout.itag, null, mapujZ, mapujDo, 0);
         cursorAdapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
@@ -179,28 +186,28 @@ public class MainActivity extends AppCompatActivity
                         @Override
                         public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
 
-                            long id = cursorAdapter.getItemId(cursor.getPosition());
+                            //long id = cursorAdapter.getItemId(cursor.getPosition());
                             //Log.d("LOKLIZATOR", "ID DEVAJSA = "+id);
 
 
 
 
-                            String item = MyContentProvider.URI_ZAWARTOSCI+"/"+id;
-                            Uri uri = Uri.parse(item);
+                            //String item = MyContentProvider.URI_ZAWARTOSCI+"/"+id;
+                            //Uri uri = Uri.parse(item);
 
 
-                            String[] p = new String[] {DBHelper.ID, DBHelper.MAC_ADDRESS};
-                            Cursor c = getContentResolver().query(uri, p, null, null, null);
-                            c.moveToFirst();
+                            //String[] p = new String[] {DBHelper.ID, DBHelper.BD_ADDRESS};
+                            //Cursor c = getContentResolver().query(uri, p, null, null, null);
+                            //c.moveToFirst();
 
-                            Log.d("LOKLIZATOR", "MAC:::: "+c.getString(c.getColumnIndex(DBHelper.MAC_ADDRESS)));
+                            //Log.d("LOKLIZATOR", "MAC:::: "+c.getString(c.getColumnIndex(DBHelper.BD_ADDRESS)));
 
 
-                            checkCheck = true;
-                            checkString = c.getString(c.getColumnIndex(DBHelper.MAC_ADDRESS));
-                            truOrFals = b;
+                            //checkCheck = true;
+                            //checkString = c.getString(c.getColumnIndex(DBHelper.BD_ADDRESS));
+                            //truOrFals = b;
 
-                            startScan();
+                            //startScan();
 
 
                             //BluetoothDevice bd;
@@ -232,10 +239,22 @@ public class MainActivity extends AppCompatActivity
         itagList.setAdapter(cursorAdapter);
         getLoaderManager().initLoader(0, null, this);
     }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // Check which request we're responding to
+        if (requestCode == 1) {
+            // Make sure the request was successful
+            if (resultCode == RESULT_OK) {
+
+            }
+        }
+    }
+
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         //ifen
-        String[] projekcja = { DBHelper.ID, DBHelper.MAC_ADDRESS, DBHelper.NAME, DBHelper.WORKING_MODE, DBHelper.RINGTONE, DBHelper.DISTANCE, DBHelper.CLICK, DBHelper.DOUBLE_CLICK };
+        String[] projekcja = { DBHelper.ID, DBHelper.BD_ADDRESS, DBHelper.NAME, DBHelper.WORKING_MODE, DBHelper.RINGTONE, DBHelper.DISTANCE, DBHelper.CLICK, DBHelper.DOUBLE_CLICK };
         CursorLoader loaderKursora = new CursorLoader(this, MyContentProvider.URI_ZAWARTOSCI, projekcja, null,null, null);
         return loaderKursora;
     }
@@ -325,204 +344,4 @@ public class MainActivity extends AppCompatActivity
             }
         }
     }
-
-
-    //(☞ ͡° ͜ʖ ͡°)☞ POŁĄCZENIE DO URZĄDZENIA
-    public void connectToDeviceSelected(BluetoothDevice connectedDevice) {
-        //peripheralTextView.append("Trying to connect to device at index: " + deviceIndexInput.getText() + "\n");
-        //int deviceSelected = Integer.parseInt(deviceIndexInput.getText().toString());
-        bluetoothGatt = connectedDevice.connectGatt(this, false, btleGattCallback);
-        Toast.makeText(MainActivity.this, "Połączono", Toast.LENGTH_SHORT).show();
-    }
-
-    //(☞ ͡° ͜ʖ ͡°)☞ CALLBACK DO DEVICE CONNECT
-    private final BluetoothGattCallback btleGattCallback = new BluetoothGattCallback() {
-
-        @Override
-        public void onCharacteristicChanged(BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic) {
-            // this will get called anytime you perform a read or write characteristic operation
-            MainActivity.this.runOnUiThread(new Runnable() {
-                public void run() {
-                    //peripheralTextView.append("device read or wrote to\n");
-                }
-            });
-        }
-
-        @Override
-        public void onConnectionStateChange(final BluetoothGatt gatt, final int status, final int newState) {
-            // this will get called when a device connects or disconnects
-            System.out.println(newState);
-            switch (newState) {
-                case 0:
-                    MainActivity.this.runOnUiThread(new Runnable() {
-                        public void run() {
-                            //peripheralTextView.append("device disconnected\n");
-                        }
-                    });
-                    break;
-                case 2:
-                    MainActivity.this.runOnUiThread(new Runnable() {
-                        public void run() {
-                            //peripheralTextView.append("device connected\n");
-                            Toast.makeText(MainActivity.this, "Połączono", Toast.LENGTH_LONG).show();
-                        }
-                    });
-
-                    // discover services and characteristics for this device
-                    bluetoothGatt.discoverServices();
-
-                    break;
-                default:
-                    MainActivity.this.runOnUiThread(new Runnable() {
-                        public void run() {
-                            //peripheralTextView.append("we encounterned an unknown state, uh oh\n");
-                        }
-                    });
-                    break;
-            }
-        }
-
-        @Override
-        public void onServicesDiscovered(final BluetoothGatt gatt, final int status) {
-            // this will get called after the client initiates a 			BluetoothGatt.discoverServices() call
-            MainActivity.this.runOnUiThread(new Runnable() {
-                public void run() {
-                    // peripheralTextView.append("device services have been discovered\n");
-                }
-            });
-            displayGattServices(bluetoothGatt.getServices());
-        }
-
-        @Override
-        // Result of a characteristic read operation
-        public void onCharacteristicRead(BluetoothGatt gatt,
-                                         BluetoothGattCharacteristic characteristic,
-                                         int status) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
-            }
-        }
-    };
-
-    //(☞ ͡° ͜ʖ ͡°)☞ NIE WIEM
-    private void displayGattServices(List<BluetoothGattService> gattServices) {
-        if (gattServices == null) return;
-
-        // Loops through available GATT Services.
-        for (BluetoothGattService gattService : gattServices) {
-
-            final String uuid = gattService.getUuid().toString();
-            System.out.println("Service discovered: " + uuid);
-            MainActivity.this.runOnUiThread(new Runnable() {
-                public void run() {
-                    //peripheralTextView.append("Service disovered: "+uuid+"\n");
-                }
-            });
-            new ArrayList<HashMap<String, String>>();
-            List<BluetoothGattCharacteristic> gattCharacteristics =
-                    gattService.getCharacteristics();
-
-            // Loops through available Characteristics.
-            for (BluetoothGattCharacteristic gattCharacteristic :
-                    gattCharacteristics) {
-
-                final String charUuid = gattCharacteristic.getUuid().toString();
-                System.out.println("Characteristic discovered for service: " + charUuid);
-                MainActivity.this.runOnUiThread(new Runnable() {
-                    public void run() {
-                        //peripheralTextView.append("Characteristic discovered for service: "+charUuid+"\n");
-                    }
-                });
-
-            }
-        }
-    }
-
-    //(☞ ͡° ͜ʖ ͡°)☞ NIE WIEM
-    private void broadcastUpdate(final String action,
-                                 final BluetoothGattCharacteristic characteristic) {
-
-        System.out.println(characteristic.getUuid());
-    }
-
-    //(☞ ͡° ͜ʖ ͡°)☞ START WYSZUKIWANIA URZĄDZEŃ
-    public void startScan() {
-        //Toast.makeText(MainActivity.this, "Trwa wyszukiwanie urządzeń", Toast.LENGTH_SHORT).show();
-        AsyncTask.execute(new Runnable() {
-            @Override
-            public void run() {
-                mBluetoothScanner.startScan(leScanCallback);
-            }
-        });
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                stopScan();
-            }
-        }, SCAN_PERIOD);
-    }
-
-    //(☞ ͡° ͜ʖ ͡°)☞ STOP WYSZUKIWANIA URZĄDZEŃ
-    public void stopScan() {
-        AsyncTask.execute(new Runnable() {
-            @Override
-            public void run() {
-                mBluetoothScanner.stopScan(leScanCallback);
-            }
-        });
-    }
-
-    //(☞ ͡° ͜ʖ ͡°)☞ DEVICE SCAN CALLBACK - WYNIKI WYSZUKANIA URZĄDZEŃ
-    private ScanCallback leScanCallback = new ScanCallback() {
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-
-            String mac = result.getDevice().getAddress();
-            //String item = MyContentProvider.URI_ZAWARTOSCI+"/"+mac;
-            Uri uri = MyContentProvider.URI_ZAWARTOSCI;
-
-            Log.d("LOKLIZATOR", "MAC = "+mac);
-            Log.d("LOKLIZATOR", "URI = "+uri.toString());
-
-            String[] p = new String[] {DBHelper.ID, DBHelper.MAC_ADDRESS};
-            Cursor c = getContentResolver().query(uri, p, null, null, null);
-            c.moveToFirst();
-
-            if(checkCheck) {
-                while (c.moveToNext()) {
-                    if (mac.equals(c.getString(c.getColumnIndex(DBHelper.MAC_ADDRESS)))) {
-                        if(mac.equals(checkString)) {
-                            if(truOrFals) {
-                                d.devicesDiscovered.put(c.getString(c.getColumnIndex(DBHelper.ID)), result.getDevice());
-                                Log.d("L", "łączyyyyyyyyyyyyyyyy");
-                                connectToDeviceSelected(result.getDevice());
-                            } else {
-                                Log.d("L", "rozllllllllllllllllllll");
-                                result.getDevice().connectGatt(MainActivity.this, false, btleGattCallback).disconnect();
-
-                            }
-
-                        }
-                    }
-                }
-            }
-            checkCheck = false;
-
-            //Log.d("LOKLIZATOR", "C = "+c.getString(c.getColumnIndex(DBHelper.MAC_ADDRESS)));
-
-            //if(uri != null) {
-
-            //}
-
-            /*if (result.getDevice().getAddress() == uri.getQueryParameter(DBHelper.MAC_ADDRESS)) {
-                foundIds.add(result.getDevice().getAddress());
-                if (!result.getDevice().getName().equals(null)) foundItags.add(result.getDevice().getName());
-                else foundItags.add("no name");
-                devicesDiscovered.add(result.getDevice());
-                deviceIndex++;
-                adaptujListe();
-                Log.d("ID: ", result.getDevice().getAddress());
-            }*/
-        }
-    };
 }

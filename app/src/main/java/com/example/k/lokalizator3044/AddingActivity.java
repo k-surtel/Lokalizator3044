@@ -1,11 +1,14 @@
 package com.example.k.lokalizator3044;
 
+import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.content.ContentValues;
+import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -39,6 +42,7 @@ public class AddingActivity extends AppCompatActivity {
 
     BluetoothDevice connectedDevice;
     BluetoothGatt bluetoothGatt;
+    Devices d = new Devices();
 
     //(☞ ͡° ͜ʖ ͡°)☞ NIE WIEM
     public final static String ACTION_DATA_AVAILABLE =
@@ -52,7 +56,14 @@ public class AddingActivity extends AppCompatActivity {
         connectedDevice = (BluetoothDevice)myBundle.get("itag");
         ifEdit = myBundle.getBoolean("edit");
 
-        connectToDeviceSelected(connectedDevice);
+        //connectToDeviceSelected(connectedDevice);
+
+        d.context = this;
+        d.callback = btleGattCallback;
+        d.bleDevice = connectedDevice;
+
+        d.connectToDeviceSelected();
+
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_adding);
@@ -106,7 +117,7 @@ public class AddingActivity extends AppCompatActivity {
             public void onClick(View view) {
                 Log.d("LOKLIZATOR", "Save button pressed!");
                 ContentValues values = new ContentValues();
-                values.put(DBHelper.MAC_ADDRESS, connectedDevice.getAddress().toString());
+                values.put(DBHelper.BD_ADDRESS, connectedDevice.getAddress());
                 values.put(DBHelper.NAME, addName.getText().toString());
                 values.put(DBHelper.WORKING_MODE, modeSpinner.getSelectedItem().toString());
                 values.put(DBHelper.RINGTONE, ringtoneSpinner.getSelectedItem().toString());
@@ -132,10 +143,12 @@ public class AddingActivity extends AppCompatActivity {
 
                 getContentResolver().insert(MyContentProvider.URI_ZAWARTOSCI, values);
 
-                //String id = uri.getQueryParameter(DBHelper.ID);
-
                 //Devices d = new Devices();
                 //d.devicesDiscovered.put(id, connectedDevice);
+                Intent intent = getIntent();
+                intent.putExtra("addr", connectedDevice.getAddress());
+                intent.putExtra("bleDevice", connectedDevice);
+                setResult(RESULT_OK, intent);
                 finish();
 
                //}
@@ -153,6 +166,11 @@ public class AddingActivity extends AppCompatActivity {
         //int deviceSelected = Integer.parseInt(deviceIndexInput.getText().toString());
         bluetoothGatt = connectedDevice.connectGatt(this, false, btleGattCallback);
         Toast.makeText(AddingActivity.this, "Połączono", Toast.LENGTH_SHORT).show();
+    }
+
+    public void disconnectDeviceSelected() {
+        Log.d("AddingActivity", "disconnectDeviceSelected()");
+        bluetoothGatt.disconnect();
     }
 
     //(☞ ͡° ͜ʖ ͡°)☞ CALLBACK DO DEVICE CONNECT
@@ -177,6 +195,7 @@ public class AddingActivity extends AppCompatActivity {
                     AddingActivity.this.runOnUiThread(new Runnable() {
                         public void run() {
                             //peripheralTextView.append("device disconnected\n");
+                            Log.d("LOKLIZATOR", "ROZŁĄCZONO!!!!!!!!!!!!!!!!!!");
                         }
                     });
                     break;
@@ -189,7 +208,7 @@ public class AddingActivity extends AppCompatActivity {
                     });
 
                     // discover services and characteristics for this device
-                    bluetoothGatt.discoverServices();
+                    d.bluetoothGatt.discoverServices();
 
                     break;
                 default:
@@ -210,7 +229,7 @@ public class AddingActivity extends AppCompatActivity {
                     // peripheralTextView.append("device services have been discovered\n");
                 }
             });
-            displayGattServices(bluetoothGatt.getServices());
+            displayGattServices(d.bluetoothGatt.getServices());
         }
 
         @Override

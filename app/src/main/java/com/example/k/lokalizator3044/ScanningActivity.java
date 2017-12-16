@@ -31,10 +31,13 @@ import com.google.android.gms.common.api.GoogleApiClient;
 
 public class ScanningActivity extends AppCompatActivity {
 
+    /**
+     * (☞ ✖ ╭╮ ✖)☞ TO TRZEBA OGARNĄĆĆĆĆĆĆĆĆĆĆĆĆĆĆ :<
+     */
+    boolean newitag;
     BluetoothManager mBluetoothManager;
     BluetoothAdapter mBluetoothAdapter;
     BluetoothLeScanner mBluetoothScanner;
-
     //(☞ ͡° ͜ʖ ͡°)☞ STOPS SCANNING AFTER 5 SECONDS
     private static final long SCAN_PERIOD = 5000;
 
@@ -53,6 +56,7 @@ public class ScanningActivity extends AppCompatActivity {
     public final static String EXTRA_DATA = "com.example.bluetooth.le.EXTRA_DATA";
     public Map<String, String> uuids = new HashMap<String, String>();
     private Handler mHandler = new Handler();
+    BluetoothLEService ble;
 
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
@@ -60,21 +64,34 @@ public class ScanningActivity extends AppCompatActivity {
      */
     private GoogleApiClient client;
 
+
+
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scanning);
 
+        Log.d("ScanningActivity", "OnCreate()");
+
         mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         mBluetoothScanner = mBluetoothAdapter.getBluetoothLeScanner();
 
+        ble = new BluetoothLEService(mBluetoothScanner, this, R.layout.raw_itag, R.id.raw_itag_name);
+
+        /**
+         * (☞ ╯︵╰, )☞ TO ZMIENIĆ ALE POTEM
+         */
         iTagsList = findViewById(R.id.found_itags_list);
         iTagsList.setOnItemClickListener(new AdapterView.OnItemClickListener(){
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Log.d("ScanningActivity", "Device chosen index = "+i);
                 Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
-
+                intent.setFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
                 intent.putExtra("itag", devicesDiscovered.get(i));
                 intent.putExtra("edit", false);
                 startActivity(intent);
@@ -94,14 +111,24 @@ public class ScanningActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        /**
+         * (☞ ✖ ╭╮ ✖)☞ TO POTRZEBNE?????
+         */
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
 
+        /**
+         * (☞ ✖ ╭╮ ✖)☞ XXXXXXXXXXXX
+         */
+        Toast.makeText(ScanningActivity.this, "Trwa wyszukiwanie urządzeń", Toast.LENGTH_SHORT).show();
+
         startScan();
+        //iTagsList.setAdapter(ble.adapter);
+        //Log.d("ScanningActivity", "setAdapter()");
     }
 
     //(☞ ͡° ͜ʖ ͡°)☞ START WYSZUKIWANIA URZĄDZEŃ
     public void startScan() {
-        Toast.makeText(ScanningActivity.this, "Trwa wyszukiwanie urządzeń", Toast.LENGTH_SHORT).show();
+        Log.d("BluetoothLEService", "StartScan()");
         devicesDiscovered.clear();
         AsyncTask.execute(new Runnable() {
             @Override
@@ -119,35 +146,52 @@ public class ScanningActivity extends AppCompatActivity {
 
     //(☞ ͡° ͜ʖ ͡°)☞ STOP WYSZUKIWANIA URZĄDZEŃ
     public void stopScan() {
+        Log.d("BluetoothLEService", "StopScan()");
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
                 mBluetoothScanner.stopScan(leScanCallback);
             }
         });
+        if (newitag) startScan();
+        else adaptujListe();
+    }
+
+
+
+    //(☞ ͡° ͜ʖ ͡°)☞ WYPEŁNIA LISTĘ WYNIKAMI - ZMIEŃ NAZWĘ..................
+    void adaptujListe() {
+        Log.d("BluetoothLEService", "adaptujListe()");
+        adapter = new ArrayAdapter<String>(this, R.layout.raw_itag, R.id.raw_itag_name, foundItags);
+        iTagsList.setAdapter(adapter);
     }
 
     //(☞ ͡° ͜ʖ ͡°)☞ DEVICE SCAN CALLBACK - WYNIKI WYSZUKANIA URZĄDZEŃ
     private ScanCallback leScanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
+            Log.d("BluetoothLEService", "onScanResult()");
             if (!foundIds.contains(result.getDevice().getAddress())) {
                 foundIds.add(result.getDevice().getAddress());
-                if (!(result.getDevice().getName() == null)) foundItags.add(result.getDevice().getName());
-                else foundItags.add("no name");
+                if (!(result.getDevice().getName() == null)) {
+                    Log.d("BluetoothLEService", "onScanResult() - new iTag");
+                    foundItags.add(result.getDevice().getName());
+                }
+                else {
+                    Log.d("BluetoothLEService", "onScanResult() - new iTag - null name");
+                    foundItags.add(result.getDevice().getAddress());
+                }
                 devicesDiscovered.add(result.getDevice());
+                Log.d("ScanningActivity", "Device index in array = "+deviceIndex);
                 deviceIndex++;
-                adaptujListe();
-                Log.d("ID: ", result.getDevice().getAddress());
+                newitag = true;
+                Log.d("ScanningActivity", "newitag = true");
+            } else {
+                Log.d("ScanningActivity", "newitag = true");
+                newitag = false;
             }
         }
     };
-
-    //(☞ ͡° ͜ʖ ͡°)☞ WYPEŁNIA LISTĘ WYNIKAMI - ZMIEŃ NAZWĘ..................
-    void adaptujListe() {
-        adapter = new ArrayAdapter<String>(this, R.layout.raw_itag, R.id.raw_itag_name, foundItags);
-        iTagsList.setAdapter(adapter);
-    }
 
     //(☞ ͡° ͜ʖ ͡°)☞ POKAZUJE TE OPCJE PO PRAWEJ NA TOOLBARZE
     @Override
@@ -167,6 +211,7 @@ public class ScanningActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_reload) {
+            Toast.makeText(ScanningActivity.this, "Trwa wyszukiwanie urządzeń", Toast.LENGTH_SHORT).show();
             startScan();
             return true;
         }
