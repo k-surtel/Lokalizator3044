@@ -1,5 +1,6 @@
 package com.example.k.lokalizator3044;
 
+import android.app.NotificationManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -12,13 +13,16 @@ import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -27,6 +31,7 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 public class ItagActivity extends AppCompatActivity {
 
@@ -37,6 +42,7 @@ public class ItagActivity extends AppCompatActivity {
     BluetoothManager mBluetoothManager;
     BluetoothAdapter mBluetoothAdapter;
     BluetoothLeScanner mBluetoothScanner;
+    BluetoothGattService immediateAlertService;
     String addr;
     private Handler mHandler = new Handler();
     //(☞ ͡° ͜ʖ ͡°)☞ STOPS SCANNING AFTER 5 SECONDS
@@ -45,6 +51,14 @@ public class ItagActivity extends AppCompatActivity {
     //(☞ ͡° ͜ʖ ͡°)☞ NIE WIEM
     public final static String ACTION_DATA_AVAILABLE =
             "com.example.bluetooth.le.ACTION_DATA_AVAILABLE";
+    public final static String ACTION_GATT_CONNECTED = "com.example.bluetooth.le.ACTION_GATT_CONNECTED";
+    public final static String ACTION_GATT_DISCONNECTED = "com.example.bluetooth.le.ACTION_GATT_DISCONNECTED";
+    public static final int NO_ALERT = 0x00;
+    public static final int MEDIUM_ALERT = 0x01;
+    boolean connected = false;
+    int alert;
+    boolean a = true;
+    public static final UUID IMMEDIATE_ALERT_SERVICE = UUID.fromString("00001802-0000-1000-8000-00805f9b34fb");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,12 +82,22 @@ public class ItagActivity extends AppCompatActivity {
         c.close();
 
 
+
         //beep
         btn = (Button)findViewById(R.id.button2);
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
+                if(a) {
+                    alert = MEDIUM_ALERT;
+                    a = false;
+                } else {
+                    alert = NO_ALERT;
+                    a = true;
+                }
+                //final BluetoothGattCharacteristic characteristic = immediateAlertService.getCharacteristics().get(0);
+                //characteristic.setValue(alert, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
+                //bluetoothGatt.writeCharacteristic(characteristic);
             }
         });
 
@@ -82,12 +106,16 @@ public class ItagActivity extends AppCompatActivity {
         btn2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                while(bluetoothGatt != null && mBluetoothManager.getConnectionState(bd, BluetoothProfile.GATT) == 2) {
+                //while(bluetoothGatt != null && mBluetoothManager.getConnectionState(bd, BluetoothProfile.GATT) == 2) {
                     Log.d("ItagActivity", "bGatt not null");
-                    bluetoothGatt.disconnect();
+                    if(bluetoothGatt != null) {
+                        bluetoothGatt.disconnect();
+                        bluetoothGatt = null;
+                    }
+                    broadcastUpdate(ACTION_GATT_DISCONNECTED);
                     //mBluetoothManager.getConnectionState(bd, BluetoothProfile.GATT);
                     Log.d("ItagActivity", "connection state = "+mBluetoothManager.getConnectionState(bd, BluetoothProfile.GATT));
-                }
+                //}
                 //bluetoothGatt = null;
                 //disconnectDeviceSelected();
             }
@@ -102,7 +130,29 @@ public class ItagActivity extends AppCompatActivity {
             }
         });
         btn3.setVisibility(View.VISIBLE);
+
+        if(mBluetoothManager != null) {
+            Log.d("ItagActivity", "bluetoothMsnager not null");
+            //if(bluetoothGatt != null) Log.d("ItagActivity", "bluetoothGatt not null");
+            if(bd != null) {
+                Log.d("ItagActivity", "bluetoothDevice not null");
+                } else {
+                    List<BluetoothDevice> bdList = mBluetoothManager.getConnectedDevices(BluetoothProfile.GATT);
+                    for(BluetoothDevice b : bdList){
+                        if(b.getAddress().equals(addr)) bd = b;
+                    }
+                Log.d("ItagActivity", "get bluetoothDevice from manager");
+                    //bluetoothGatt = bd.connectGatt(this, true, btleGattCallback);
+                }
+            if (mBluetoothManager.getConnectionState(bd, BluetoothProfile.GATT) == 2) {
+                Log.d("ItagActivity", "state: connected");
+                bluetoothGatt = bd.connectGatt(this, true, btleGattCallback);
+                btn2.setVisibility(View.VISIBLE);
+                btn3.setVisibility(View.GONE);
+            }
+        }
     }
+
 
     public void disconnectDeviceSelected() {
         Log.d("ItagActivity", "disconnectDeviceSelected()");
@@ -150,6 +200,7 @@ public class ItagActivity extends AppCompatActivity {
             Log.d("ItagActivity", "onScanResult()");
             if(result.getDevice().getAddress().equals(addr)) {
                 Log.d("ItagActivity", "MATCH FOUND");
+                stopScan();
                 bd = result.getDevice();
                 connectToDeviceSelected();
             }
@@ -160,6 +211,7 @@ public class ItagActivity extends AppCompatActivity {
     public void connectToDeviceSelected() {
         //peripheralTextView.append("Trying to connect to device at index: " + deviceIndexInput.getText() + "\n");
         //int deviceSelected = Integer.parseInt(deviceIndexInput.getText().toString());
+        mBluetoothAdapter.cancelDiscovery();
         bluetoothGatt = bd.connectGatt(this, true, btleGattCallback);
         Toast.makeText(ItagActivity.this, "connectToDeviceSelected", Toast.LENGTH_SHORT).show();
     }
@@ -177,8 +229,19 @@ public class ItagActivity extends AppCompatActivity {
             });
         }
 
+        NotificationManager notificationManager;
+        NotificationCompat.Builder mBuilder;
+
         @Override
         public void onConnectionStateChange(final BluetoothGatt gatt, final int status, final int newState) {
+
+            notificationManager = (NotificationManager) ItagActivity.this.getSystemService(Context.NOTIFICATION_SERVICE);
+            mBuilder =
+                    new NotificationCompat.Builder(ItagActivity.this)
+                            .setSmallIcon(R.drawable.common_ic_googleplayservices)
+                            .setContentTitle("iTag is connected")
+                            .setOngoing(true);
+
             // this will get called when a device connects or disconnects
             System.out.println(newState);
             switch (newState) {
@@ -189,6 +252,7 @@ public class ItagActivity extends AppCompatActivity {
                             Log.d("LOKLIZATOR", "ROZŁĄCZONO!!!!!!!!!!!!!!!!!!");
                             btn2.setVisibility(View.GONE);
                             btn3.setVisibility(View.VISIBLE);
+                            notificationManager.cancel(1);
                         }
                     });
                     break;
@@ -199,11 +263,14 @@ public class ItagActivity extends AppCompatActivity {
                             Toast.makeText(ItagActivity.this, "Połączono", Toast.LENGTH_LONG).show();
                             btn2.setVisibility(View.VISIBLE);
                             btn3.setVisibility(View.GONE);
+
+
+                            notificationManager.notify(1, mBuilder.build());
                         }
                     });
 
                     // discover services and characteristics for this device
-                    bluetoothGatt.discoverServices();
+                    //bluetoothGatt.discoverServices();
 
                     break;
                 default:
@@ -226,6 +293,14 @@ public class ItagActivity extends AppCompatActivity {
                 }
             });
             displayGattServices(bluetoothGatt.getServices());
+            for (BluetoothGattService service : gatt.getServices()) {
+                if (IMMEDIATE_ALERT_SERVICE.equals(service.getUuid())) {
+                    immediateAlertService = service;
+                    //broadcaster.sendBroadcast(new Intent(IMMEDIATE_ALERT_AVAILABLE));
+                    //gatt.readCharacteristic(getCharacteristic(gatt, IMMEDIATE_ALERT_SERVICE, ALERT_LEVEL_CHARACTERISTIC));
+                    //setCharacteristicNotification(gatt, immediateAlertService.getCharacteristics().get(0), true);
+                }
+            }
         }
 
         @Override
@@ -278,5 +353,11 @@ public class ItagActivity extends AppCompatActivity {
                                  final BluetoothGattCharacteristic characteristic) {
 
         System.out.println(characteristic.getUuid());
+    }
+
+    private void broadcastUpdate(final String action) {
+        Log.d("ItagActivity", "broadcastUpdate: disconnect!!!");
+        final Intent intent = new Intent(action);
+        sendBroadcast(intent);
     }
 }

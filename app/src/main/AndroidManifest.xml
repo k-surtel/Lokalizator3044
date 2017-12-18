@@ -44,7 +44,9 @@
             android:enabled="true"
             android:exported="false"></provider>
 
-        <activity android:name=".ItagActivity"></activity>
+        <activity android:name=".ItagActivity"
+            android:parentActivityName=".MainActivity"
+            ></activity>
     </application>
 
 </manifest>
