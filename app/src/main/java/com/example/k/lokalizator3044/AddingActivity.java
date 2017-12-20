@@ -62,7 +62,7 @@ public class AddingActivity extends AppCompatActivity {
         d.callback = btleGattCallback;
         d.bleDevice = connectedDevice;
 
-        d.connectToDeviceSelected();
+        //d.connectToDeviceSelected();
 
 
         super.onCreate(savedInstanceState);
