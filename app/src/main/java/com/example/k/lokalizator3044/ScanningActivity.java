@@ -56,7 +56,6 @@ public class ScanningActivity extends AppCompatActivity {
     public final static String EXTRA_DATA = "com.example.bluetooth.le.EXTRA_DATA";
     public Map<String, String> uuids = new HashMap<String, String>();
     private Handler mHandler = new Handler();
-    BluetoothLEService ble;
 
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
@@ -79,8 +78,6 @@ public class ScanningActivity extends AppCompatActivity {
         mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         mBluetoothScanner = mBluetoothAdapter.getBluetoothLeScanner();
-
-        ble = new BluetoothLEService(mBluetoothScanner, this, R.layout.raw_itag, R.id.raw_itag_name);
 
         /**
          * (☞ ╯︵╰, )☞ TO ZMIENIĆ ALE POTEM

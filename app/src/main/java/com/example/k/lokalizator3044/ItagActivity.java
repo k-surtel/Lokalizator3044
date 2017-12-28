@@ -22,9 +22,7 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -75,10 +73,10 @@ public class ItagActivity extends AppCompatActivity {
         mBluetoothScanner = mBluetoothAdapter.getBluetoothLeScanner();
 
 
-        c = getContentResolver().query(uri,new String[] {DBHelper.BD_ADDRESS}, null, null, null);
+        c = getContentResolver().query(uri,new String[] {DBHelper.ADDRESS}, null, null, null);
         c.moveToFirst();
-        Log.d("ItagActivity", "Click address = "+c.getString(c.getColumnIndex(DBHelper.BD_ADDRESS)));
-        addr = c.getString(c.getColumnIndex(DBHelper.BD_ADDRESS));
+        Log.d("ItagActivity", "Click address = "+c.getString(c.getColumnIndex(DBHelper.ADDRESS)));
+        addr = c.getString(c.getColumnIndex(DBHelper.ADDRESS));
         c.close();
 
 
