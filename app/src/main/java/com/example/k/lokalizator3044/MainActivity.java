@@ -8,9 +8,9 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
@@ -43,6 +43,7 @@ import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -54,22 +55,22 @@ public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, LoaderManager.LoaderCallbacks<Cursor> {
 
 
-
+    //TODO: WYJEBAC NIEUZYWANE ZMIENNE
     BluetoothManager mBluetoothManager;
     BluetoothAdapter mBluetoothAdapter;
     BluetoothLeScanner mBluetoothScanner;
     private Handler mHandler = new Handler();
     private SimpleCursorAdapter cursorAdapter;
 
-    ArrayList<BluetoothDevice> foundDevices = new ArrayList<>();
-    ArrayList<String> foundDeviceNames = new ArrayList<>();
+    ArrayList<BluetoothDevice> scannedDevices = new ArrayList<>();
+    ArrayList<String> scannedDevicesNames = new ArrayList<>();
 
-    HashMap<Integer, BluetoothDevice> myDevices = new HashMap<>();
-    HashMap<Integer, Boolean> myDevicesState = new HashMap<>();
+    HashMap<String, BluetoothDevice> myDevices = new HashMap<>();
+    HashMap<String, Boolean> myDevicesState = new HashMap<>();
+    HashMap<String, BluetoothGatt> myGatts = new HashMap<>();
 
     int currentDeviceId = 0;
     int numberOfDevices = 0;
-
     Uri uri;
     ListView itagList;
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 1;
@@ -77,7 +78,7 @@ public class MainActivity extends AppCompatActivity
     private static final long SCAN_PERIOD = 5000;
     private final static int REQUEST_ENABLE_BT = 1;
     int deviceIndex = 0;
-    //String[] foundDevices = new String[]{};
+    //String[] scannedDevices = new String[]{};
     ArrayAdapter<String> adapter;
     ListView rawItagList;
     Button cancelBtn;
@@ -87,15 +88,14 @@ public class MainActivity extends AppCompatActivity
     public final static String ACTION_DATA_AVAILABLE = "com.example.bluetooth.le.ACTION_DATA_AVAILABLE";
     public final static String EXTRA_DATA = "com.example.bluetooth.le.EXTRA_DATA";
     public Map<String, String> uuids = new HashMap<String, String>();
-    BluetoothLEService ble;
     ArrayList<BluetoothGatt> bg;
     Button rawCancel;
     AlertDialog.Builder builder;
     BluetoothGatt bluetoothGatt;
     BluetoothDevice device;
-
-
-
+    boolean itsNewDevice;
+    DBHelper dbHelper = new DBHelper(this);
+    boolean scanningActive;
 
 
     @Override
@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity
 
 
         checkBleSupport();
-        if(!isBluetoothEnable()) requestBluetoothEnable();
+        if (!isBluetoothEnable()) requestBluetoothEnable();
         requestLocationPermission();
 
         //(☞ ͡° ͜ʖ ͡°)☞ TOOLBAR - TEN PASEK NA GÓRZE
@@ -124,13 +124,11 @@ public class MainActivity extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-//                if(isBluetoothEnable()) {
-//                    Intent intent = new Intent(getApplicationContext(), ScanningActivity.class);
-//                    startActivityForResult(intent, 1);
-//                } else {
-//                    requestBluetoothEnable();
-//                }
-                startScan();
+                //TODO: TYLE WYSTARCZY?
+                if (isBluetoothEnable()) {
+                    itsNewDevice = true;
+                    startScan(null);
+                } else requestBluetoothEnable();
             }
         });
 
@@ -143,6 +141,9 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
+        scanningActive = false;
+        myDevicesState = dbHelper.setFalseForEveryRecord();
+
         itagList = findViewById(R.id.itag_list);
         wypelnijListe();
 
@@ -151,7 +152,8 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 //Toast.makeText(MainActivity.this, "Click id = "+id, Toast.LENGTH_SHORT).show();
-                Log.d("MainActivity", "Click id = "+id);
+                Log.d("MainActivity", "Click id = " + id);
+                Log.d("MainActivity", "position = " + position);
 //                uri = Uri.parse(MyContentProvider.URI_ZAWARTOSCI+"/"+id);
 //                Cursor c = getContentResolver().query(uri,new String[] {DBHelper.BD_ADDRESS}, null, null, null);
 //                c.moveToFirst();
@@ -168,6 +170,7 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
+    //TODO: ZROBIĆ TO NA BLE NIE ZWYŁYM BT [https://www.bignerdranch.com/blog/bluetooth-low-energy-part-1/]
     public void checkBleSupport() {
         //(☞ ͡° ͜ʖ ͡°)☞ SPRAWDZA CZY TELEFON MA BLE
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -184,25 +187,30 @@ public class MainActivity extends AppCompatActivity
             builder.show();
         }
     }
+
     public boolean isBluetoothEnable() {
         if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
             return false;
         } else return true;
     }
+
     public void requestBluetoothEnable() {
         Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
         startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
     }
+
     public void requestLocationPermission() {
         if (!(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)) {
             requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_REQUEST_FINE_LOCATION);
         }
     }
+
     public void requestBluetoothPermission() {
         if (!(checkSelfPermission(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED)) {
             requestPermissions(new String[]{Manifest.permission.BLUETOOTH}, PERMISSION_REQUEST_FINE_LOCATION);
         }
     }
+
     public void requestBluetoothAdminPermission() {
         if (!(checkSelfPermission(Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED)) {
             requestPermissions(new String[]{Manifest.permission.BLUETOOTH_ADMIN}, PERMISSION_REQUEST_FINE_LOCATION);
@@ -211,79 +219,48 @@ public class MainActivity extends AppCompatActivity
 
     private void wypelnijListe() {
         Log.d("LOKLIZATOR", "Wypełnij listę!");
-        //ifen
-        String[] mapujZ = new String[]{DBHelper.NAME, DBHelper.BD_ADDRESS};
+        String[] mapujZ = new String[]{DBHelper.NAME, DBHelper.ADDRESS};
         int[] mapujDo = new int[]{R.id.itag_name, R.id.if_enabled};
 
         cursorAdapter = new SimpleCursorAdapter(this, R.layout.itag, null, mapujZ, mapujDo, 0);
         cursorAdapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
             @Override
-            public boolean setViewValue(View view, final Cursor cursor, int i) {
-
+            public boolean setViewValue(final View view, final Cursor cursor, int i) {
                 numberOfDevices = cursorAdapter.getCount();
-                Log.d("MainActivity", "numberOfDevices = "+numberOfDevices);
+                Log.d("MainActivity", "numberOfDevices = " + numberOfDevices);
 
                 if (i != cursor.getColumnIndexOrThrow(DBHelper.NAME)) {
-                    final Switch s = (Switch)view;
-                    //tu coś ten
-                    s.setChecked(true);
+                    final Switch s = (Switch) view;
+
+                    if (myDevicesState.get(cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS))))
+                        s.setChecked(true);
+                    else s.setChecked(false);
+
+                    view.setTag(cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS)));
+
 
                     s.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                         @Override
                         public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
 
                             long id = cursorAdapter.getItemId(cursor.getPosition());
-                            Log.d("LOKLIZATOR", "ID DEVAJSA = "+id);
+                            Log.d("LOKLIZATOR", "tag = " + view.getTag());
 
-                            if(b) connectToDeviceSelected((int)id);
-                            else disconnectDeviceSelected((int)id);
-
-
-
-                            //String item = MyContentProvider.URI_ZAWARTOSCI+"/"+id;
-                            //Uri uri = Uri.parse(item);
-
-
-                            //String[] p = new String[] {DBHelper.ID, DBHelper.BD_ADDRESS};
-                            //Cursor c = getContentResolver().query(uri, p, null, null, null);
-                            //c.moveToFirst();
-
-                            //Log.d("LOKLIZATOR", "MAC:::: "+c.getString(c.getColumnIndex(DBHelper.BD_ADDRESS)));
-
-
-                            //checkCheck = true;
-                            //checkString = c.getString(c.getColumnIndex(DBHelper.BD_ADDRESS));
-                            //truOrFals = b;
-
-                            //startScan();
-
-
-                            //BluetoothDevice bd;
-                            //Devices d = new Devices();
-                            //bd = d.devicesDiscovered.get(id);
-                            //Log.d("LOKLIZATOR", "ID DEVAJSA = "+id);
-                            //Log.d("LOKLIZATOR", "nazwa = "+bd.getName());
-
-                            //ContentValues val = new ContentValues();
-                            if(b) {
-                                //val.put(DBHelper.IF_ENABLED, 1);
-                                //connectToDeviceSelected(bd);
+                            if (b) {
+                                itsNewDevice = false;
+                                startScan((String)view.getTag());
+                            } else {
+                                disconnectDeviceSelected((String)view.getTag());
                             }
-                            else {
-                                //val.put(DBHelper.IF_ENABLED, 0);
-                                //bluetoothGatt.disconnect();
-                            }
-
-                            //getContentResolver().update(uri, val, null, null);*/
                         }
                     });
 
                     return true;
                 }
-
                 return false;
             }
         });
+
         itagList.setAdapter(cursorAdapter);
         getLoaderManager().initLoader(0, null, this);
     }
@@ -301,13 +278,16 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        //ifen
-        String[] projekcja = { DBHelper.ID, DBHelper.BD_ADDRESS, DBHelper.NAME, DBHelper.WORKING_MODE, DBHelper.RINGTONE, DBHelper.DISTANCE, DBHelper.CLICK, DBHelper.DOUBLE_CLICK };
-        CursorLoader loaderKursora = new CursorLoader(this, MyContentProvider.URI_ZAWARTOSCI, projekcja, null,null, null);
+        String[] projekcja = {DBHelper.ID, DBHelper.ADDRESS, DBHelper.NAME, DBHelper.WORKING_MODE, DBHelper.RINGTONE, DBHelper.DISTANCE, DBHelper.CLICK, DBHelper.DOUBLE_CLICK};
+        CursorLoader loaderKursora = new CursorLoader(this, MyContentProvider.URI_ZAWARTOSCI, projekcja, null, null, null);
         return loaderKursora;
     }
+
     @Override
-    public void onLoadFinished(Loader<Cursor> loader, Cursor data) { cursorAdapter.swapCursor(data); }
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        cursorAdapter.swapCursor(data);
+    }
+
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
         cursorAdapter.swapCursor(null);
@@ -394,32 +374,32 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-
-
-
-
-
-
     //(☞ ͡° ͜ʖ ͡°)☞ START WYSZUKIWANIA URZĄDZEŃ
-    public void startScan() {
+    public void startScan(String address) {
         Log.d("MainActivity", "StartScan()");
 
-        foundDeviceNames.clear();
-        foundDevices.clear();
+        final String addr = address;
 
-        AsyncTask.execute(new Runnable() {
-            @Override
-            public void run() {
-                mHandler.removeCallbacks(this);
-                mBluetoothScanner.startScan(scanCallback);
-            }
-        });
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                stopScan();
-            }
-        }, SCAN_PERIOD);
+        if (!scanningActive) {
+
+            scanningActive = true;
+            scannedDevicesNames.clear();
+            scannedDevices.clear();
+
+            AsyncTask.execute(new Runnable() {
+                @Override
+                public void run() {
+                    mHandler.removeCallbacks(this);
+                    mBluetoothScanner.startScan(scanCallback);
+                }
+            });
+            mHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    stopScan(addr);
+                }
+            }, SCAN_PERIOD);
+        }
     }
 
     //(☞ ͡° ͜ʖ ͡°)☞ DEVICE SCAN CALLBACK - WYNIKI WYSZUKANIA URZĄDZEŃ
@@ -428,26 +408,29 @@ public class MainActivity extends AppCompatActivity
         public void onScanResult(int callbackType, ScanResult result) {
             Log.d("MainActivity", "onScanResult()");
 
-            boolean isInDatabase = false;
-            Cursor cursor = getContentResolver()
-                    .query(MyContentProvider.URI_ZAWARTOSCI ,new String[] {DBHelper.BD_ADDRESS}, null, null, null);
+            if (!scannedDevices.contains(result.getDevice())) {
+                boolean isInDatabase = false;
+                if(itsNewDevice) {
+                    Cursor cursor = getContentResolver()
+                            .query(MyContentProvider.URI_ZAWARTOSCI, new String[]{DBHelper.ADDRESS}, null, null, null);
 
-            if (cursor.moveToFirst()) {
-                do {
-                    if(cursor.getString(cursor.getColumnIndex(DBHelper.BD_ADDRESS)).equals(result.getDevice().getAddress())) isInDatabase = true;
-                } while (cursor.moveToNext());
-            }
-            cursor.close();
+                    if (cursor.moveToFirst()) {
+                        do {
+                            if (cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS)).equals(result.getDevice().getAddress()))
+                                isInDatabase = true;
+                        } while (cursor.moveToNext());
+                    }
+                    cursor.close();
+                }
 
-            if(!isInDatabase) {
-                if (!foundDevices.contains(result.getDevice())) {
-                    foundDevices.add(result.getDevice());
+                if (!isInDatabase || !itsNewDevice) {
+                    scannedDevices.add(result.getDevice());
                     if (result.getDevice().getName() == null || result.getDevice().getName().equals("")) {
                         Log.d("MainActivity", "onScanResult() - new device (no name)");
-                        foundDeviceNames.add(result.getDevice().getAddress());
+                        scannedDevicesNames.add(result.getDevice().getAddress());
                     } else {
                         Log.d("MainActivity", "onScanResult() - new iTag");
-                        foundDeviceNames.add(result.getDevice().getName());
+                        scannedDevicesNames.add(result.getDevice().getName());
                     }
                     Log.d("MainActivity", "newitag = true");
                 } else {
@@ -458,7 +441,7 @@ public class MainActivity extends AppCompatActivity
     };
 
     //(☞ ͡° ͜ʖ ͡°)☞ STOP WYSZUKIWANIA URZĄDZEŃ
-    public void stopScan() {
+    public void stopScan(String address) {
         Log.d("BluetoothLEService", "StopScan()");
         AsyncTask.execute(new Runnable() {
             @Override
@@ -466,121 +449,85 @@ public class MainActivity extends AppCompatActivity
                 mBluetoothScanner.stopScan(scanCallback);
             }
         });
-        adaptujListe();
+        if (itsNewDevice) adaptujListe();
+        else findDevice(address);
+        scanningActive = false;
     }
 
     //(☞ ͡° ͜ʖ ͡°)☞ WYPEŁNIA LISTĘ WYNIKAMI
     void adaptujListe() {
         Log.d("MainActivity", "adaptujListe()");
 
-        if(!foundDeviceNames.isEmpty()) {
+        if (!scannedDevices.isEmpty()) {
             Log.d("MainActivity", "devicesDiscovered nie jest empty");
 
             builder = new AlertDialog.Builder(MainActivity.this);
             builder.setTitle("Wybierz urządzenie");
 
-            builder.setItems(foundDeviceNames.toArray(new String[0]), new DialogInterface.OnClickListener() {
+            builder.setItems(scannedDevicesNames.toArray(new String[0]), new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     numberOfDevices++;
-                    myDevices.put(numberOfDevices, foundDevices.get(which));
-                    Log.d("MainActivity", "Id który będzie dodany: "+numberOfDevices);
+                    myDevices.put(scannedDevices.get(which).getAddress(), scannedDevices.get(which));
+                    Log.d("MainActivity", "Id który będzie dodany: " + numberOfDevices);
 
-                    connectToDeviceSelected(numberOfDevices);
+                    connectToDeviceSelected(scannedDevices.get(which));
                 }
             });
 
             AlertDialog dialog = builder.create();
             dialog.show();
-        } else Toast.makeText(MainActivity.this, "Nie znaleziono żadnych urządzeń!", Toast.LENGTH_SHORT).show();
+        } else
+            Toast.makeText(MainActivity.this, "Nie znaleziono żadnych urządzeń!", Toast.LENGTH_SHORT).show();
     }
 
+    public void findDevice(String address) {
+        Log.d("MainActivity", "findDevice()");
+        Log.d("MainActivity", "findDevice() - address: "+address);
+        Log.d("MainActivity", "devs size: "+scannedDevices.size());
 
-
-
-
-
-
-
-    //(☞ ͡° ͜ʖ ͡°)☞ START WYSZUKIWANIA URZĄDZEŃ - DODANE
-    public void findDeviceScan() {
-        Log.d("MainActivity", "findDeviceScan()");
-        //devicesDiscovered.clear();
-        AsyncTask.execute(new Runnable() {
-            @Override
-            public void run() {
-                mHandler.removeCallbacks(this);
-                mBluetoothScanner.startScan(findDeviceScanCallback);
-            }
-        });
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                stopScan();
-            }
-        }, SCAN_PERIOD);
-    }
-
-    //(☞ ͡° ͜ʖ ͡°)☞ DEVICE SCAN CALLBACK - WYNIKI WYSZUKANIA URZĄDZEŃ
-    private ScanCallback findDeviceScanCallback = new ScanCallback() {
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            Log.d("MainActivity", "onScanResult()");
-            if (!foundDeviceNames.contains(result.getDevice().getAddress())) {
-                foundDeviceNames.add(result.getDevice().getAddress());
-                if (!(result.getDevice().getName() == null)) {
-                    Log.d("MainActivity", "onScanResult() - new iTag");
-                    //foundDevices.add(result.getDevice().getName());
+        //if (!scannedDevices.isEmpty() && address != null && !address.equals("")) {
+            Log.d("MainActivity", "lista zeskanowanych nie jest pusta, ani adres");
+            for(BluetoothDevice bd : scannedDevices) {
+                Log.d("MainActivity", "sprawdzanie elementu: " + bd.getAddress());
+                if (bd.getAddress().equals(address)) {
+                    connectToDeviceSelected(bd);
                 }
-                else {
-                    Log.d("MainActivity", "onScanResult() - new iTag - null name");
-                    //foundDevices.add(result.getDevice().getAddress());
-                }
-                //devicesDiscovered.add(result.getDevice());
-                Log.d("MainActivity", "Device index in array = "+deviceIndex);
-                deviceIndex++;
-
-                Log.d("MainActivity", "newitag = true");
-            } else {
-                Log.d("MainActivity", "newitag = false");
-
-            }
+            //}
         }
-    };
-
-    //(☞ ͡° ͜ʖ ͡°)☞ STOP WYSZUKIWANIA URZĄDZEŃ
-    public void stopFindDeviceScan() {
-        Log.d("BluetoothLEService", "StopScan()");
-        AsyncTask.execute(new Runnable() {
-            @Override
-            public void run() {
-                mBluetoothScanner.stopScan(findDeviceScanCallback);
-            }
-        });
-        //if (newitag) startScan();
-        adaptujListe();
     }
-
-
-
-
-
-
 
 
     //(☞ ͡° ͜ʖ ͡°)☞ POŁĄCZENIE DO URZĄDZENIA
-    public void connectToDeviceSelected(int deviceId) {
-        currentDeviceId = deviceId;
-        bluetoothGatt = myDevices.get(deviceId).connectGatt(this, false, gattCallback);
-        Toast.makeText(MainActivity.this, "Połączono do "+myDevices.get(deviceId).getAddress(), Toast.LENGTH_SHORT).show();
+    public void connectToDeviceSelected(BluetoothDevice bd) {
+        Log.d("MainActivity", "connectToDeviceSelected()");
+        bluetoothGatt = bd.connectGatt(this, false, gattCallback);
+
+        myGatts.put(bd.getAddress(), bluetoothGatt);
+        myDevices.put(bd.getAddress(), bd);
+        myDevicesState.put(bd.getAddress(), true);
+        Toast.makeText(MainActivity.this, "Połączono do " + bd.getAddress(), Toast.LENGTH_SHORT).show();
+
+        if (itsNewDevice) {
+            myDevicesState.put(bd.getAddress(), true);
+
+            Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
+            intent.putExtra("itag", bd);
+            intent.putExtra("edit", false);
+            startActivity(intent);
+        }
     }
 
-    public void disconnectDeviceSelected(int deviceId) {
+    public void disconnectDeviceSelected(String address) {
         Log.d("AddingActivity", "disconnectDeviceSelected()");
-        bluetoothGatt.disconnect();
+        if (myGatts.get(address) != null) {
+            myGatts.get(address).disconnect();
+            myGatts.remove(address);
+
+            myDevices.remove(address);
+            myDevicesState.put(address, false);
+        }
     }
-
-
 
 
     //(☞ ͡° ͜ʖ ͡°)☞ CALLBACK DO DEVICE CONNECT
@@ -601,31 +548,23 @@ public class MainActivity extends AppCompatActivity
             // this will get called when a device connects or disconnects
             System.out.println(newState);
             switch (newState) {
-                case 0:
+                case BluetoothProfile.STATE_DISCONNECTED:
                     MainActivity.this.runOnUiThread(new Runnable() {
                         public void run() {
-                            Log.d("LOKLIZATOR", "ROZŁĄCZONO!!!!!!!!!!!!!!!!!!");
+                            Log.d("MainActivity", "ROZŁĄCZONO Z " + gatt.getDevice().getAddress());
                         }
                     });
                     break;
-                case 2:
+                case BluetoothProfile.STATE_CONNECTED:
                     MainActivity.this.runOnUiThread(new Runnable() {
                         public void run() {
-                            Log.d("MainActivity", "POŁĄCZONO!!!!!!!!!!!!!!!!");
+                            Log.d("MainActivity", "POŁĄCZONO Z " + gatt.getDevice().getAddress());
 
-                            if(myDevicesState.get(currentDeviceId) == null) {
-                                myDevicesState.put(currentDeviceId, true);
-
-                                Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
-                                intent.putExtra("itag", myDevices.get(currentDeviceId));
-                                intent.putExtra("edit", false);
-                                startActivity(intent);
-                            }
                         }
                     });
 
                     // discover services and characteristics for this device
-                    //bluetoothGatt.discoverServices();
+                    bluetoothGatt.discoverServices();
 
                     break;
                 default:
@@ -637,6 +576,7 @@ public class MainActivity extends AppCompatActivity
                     break;
             }
         }
+
 
         @Override
         public void onServicesDiscovered(final BluetoothGatt gatt, final int status) {
@@ -661,25 +601,6 @@ public class MainActivity extends AppCompatActivity
     };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     //(☞ ͡° ͜ʖ ͡°)☞ NIE WIEM
     private void displayGattServices(List<BluetoothGattService> gattServices) {
         if (gattServices == null) return;
@@ -692,6 +613,7 @@ public class MainActivity extends AppCompatActivity
             MainActivity.this.runOnUiThread(new Runnable() {
                 public void run() {
                     //peripheralTextView.append("Service disovered: "+uuid+"\n");
+                    Log.d("SERVICES", "Service disovered: "+uuid);
                 }
             });
             new ArrayList<HashMap<String, String>>();
@@ -707,15 +629,13 @@ public class MainActivity extends AppCompatActivity
                 MainActivity.this.runOnUiThread(new Runnable() {
                     public void run() {
                         //peripheralTextView.append("Characteristic discovered for service: "+charUuid+"\n");
+                        Log.d("CHARACTERISTICS", "Characteristic discovered for service: "+charUuid);
                     }
                 });
 
             }
         }
     }
-
-
-
 
 
     //(☞ ͡° ͜ʖ ͡°)☞ NIE WIEM

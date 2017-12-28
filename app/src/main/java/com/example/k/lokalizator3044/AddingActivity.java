@@ -117,7 +117,7 @@ public class AddingActivity extends AppCompatActivity {
             public void onClick(View view) {
                 Log.d("LOKLIZATOR", "Save button pressed!");
                 ContentValues values = new ContentValues();
-                values.put(DBHelper.BD_ADDRESS, connectedDevice.getAddress());
+                values.put(DBHelper.ADDRESS, connectedDevice.getAddress());
                 values.put(DBHelper.NAME, addName.getText().toString());
                 values.put(DBHelper.WORKING_MODE, modeSpinner.getSelectedItem().toString());
                 values.put(DBHelper.RINGTONE, ringtoneSpinner.getSelectedItem().toString());
