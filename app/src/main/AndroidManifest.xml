@@ -34,9 +34,6 @@
             android:name=".SettingsActivity"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity android:name=".AddingActivity" />
-        <activity
-            android:name=".ScanningActivity"
-            android:theme="@style/AppTheme.NoActionBar" />
 
         <provider
             android:name=".MyContentProvider"

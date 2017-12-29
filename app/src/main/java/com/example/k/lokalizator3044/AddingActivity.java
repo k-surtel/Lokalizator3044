@@ -34,7 +34,7 @@ public class AddingActivity extends AppCompatActivity {
     Spinner distanceSpinner;
     Spinner clickSpinner;
     Spinner doubleClickSpinner;
-
+    Devices d;
     Button cancelBtn;
     Button saveBtn;
 
@@ -42,7 +42,6 @@ public class AddingActivity extends AppCompatActivity {
 
     BluetoothDevice connectedDevice;
     BluetoothGatt bluetoothGatt;
-    Devices d = new Devices();
 
     //(☞ ͡° ͜ʖ ͡°)☞ NIE WIEM
     public final static String ACTION_DATA_AVAILABLE =
@@ -50,6 +49,8 @@ public class AddingActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        Devices d = new Devices();
 
         //tuuuuu?
         Bundle myBundle = getIntent().getExtras();

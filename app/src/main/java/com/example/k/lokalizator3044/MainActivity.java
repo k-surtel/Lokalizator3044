@@ -16,6 +16,7 @@ import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.content.BroadcastReceiver;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.CursorLoader;
 import android.content.DialogInterface;
@@ -32,6 +33,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.util.Log;
+import android.view.ActionMode;
+import android.view.MenuInflater;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -41,6 +44,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -127,6 +131,9 @@ public class MainActivity extends AppCompatActivity
     private BroadcastReceiver receiver;
     boolean ringtone = false;
 
+    boolean pSwitch = false;
+    Switch pressedSwitch;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -182,29 +189,67 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 // Get the cursor, positioned to the corresponding row in the result set
-                Cursor cursor = (Cursor)itagList.getItemAtPosition(position);
+                Cursor cursor = (Cursor) itagList.getItemAtPosition(position);
 
                 // Get the state's capital from this row in the database.
                 String address = cursor.getString(cursor.getColumnIndexOrThrow(DBHelper.ADDRESS));
-                Log.d("MainActivity", "ADDR = "+address);
+                Log.d("MainActivity", "ADDR = " + address);
 
-                if(myDevices.get(address) != null && myDevicesState.get(address) && myGatts.get(address) != null && !alert) {
+                if (myDevices.get(address) != null && myDevicesState.get(address) && myGatts.get(address) != null && !alert) {
                     BluetoothGatt gatt = myGatts.get(address);
                     bc = findCharacteristic(address, CHAR_ALERT_LEVEL_UUID);
-                    if(bc != null) {
-                        bc.setValue(new byte[] { (byte) 0x01 });
+                    if (bc != null) {
+                        bc.setValue(new byte[]{(byte) 0x01});
                         alert = true;
                         gatt.writeCharacteristic(bc);
                     }
-                } else if(myDevices.get(address) != null && myDevicesState.get(address) && myGatts.get(address) != null && alert) {
-                        BluetoothGatt gatt = myGatts.get(address);
-                        bc = findCharacteristic(address, CHAR_ALERT_LEVEL_UUID);
-                        if(bc != null) {
-                            bc.setValue(new byte[] { (byte) 0x00 });
-                            alert = false;
-                            gatt.writeCharacteristic(bc);
+                } else if (myDevices.get(address) != null && myDevicesState.get(address) && myGatts.get(address) != null && alert) {
+                    BluetoothGatt gatt = myGatts.get(address);
+                    bc = findCharacteristic(address, CHAR_ALERT_LEVEL_UUID);
+                    if (bc != null) {
+                        bc.setValue(new byte[]{(byte) 0x00});
+                        alert = false;
+                        gatt.writeCharacteristic(bc);
                     }
                 }
+            }
+        });
+
+
+        itagList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
+        itagList.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
+            @Override
+            public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
+            }
+
+            @Override
+            public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                MenuInflater menuInflater = mode.getMenuInflater();
+                menuInflater.inflate(R.menu.menu_delete, menu);
+                //Toolbar tb = findViewById(R.id.toolbar);
+                //tb.setVisibility(View.GONE);
+                return true;
+            }
+
+            @Override
+            public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                return false;
+            }
+
+            @Override
+            public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.action_delete:
+                        kasujZaznaczone();
+                        return true;
+                }
+                return false;
+            }
+
+            @Override
+            public void onDestroyActionMode(ActionMode mode) {
+                //Toolbar tb = (Toolbar)findViewById(R.id.toolbar);
+                //tb.setVisibility(View.VISIBLE);
             }
         });
     }
@@ -269,9 +314,10 @@ public class MainActivity extends AppCompatActivity
                 Log.d("MainActivity", "numberOfDevices = " + numberOfDevices);
 
                 if (i == cursor.getColumnIndexOrThrow(DBHelper.ADDRESS)) {
-                    final Switch s = (Switch)view;
+                    final Switch s = (Switch) view;
 
-                    if (myDevicesState.get(cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS)))) s.setChecked(true);
+                    if (myDevicesState.get(cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS))))
+                        s.setChecked(true);
                     else s.setChecked(false);
 
                     view.setTag(cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS)));
@@ -280,11 +326,13 @@ public class MainActivity extends AppCompatActivity
                     s.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                         @Override
                         public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                            pSwitch = true;
+                            pressedSwitch = s;
                             if (b) {
                                 itsNewDevice = false;
-                                startScan((String)view.getTag());
+                                startScan((String) view.getTag());
                             } else {
-                                disconnectDeviceSelected((String)view.getTag());
+                                disconnectDeviceSelected((String) view.getTag());
                             }
                         }
                     });
@@ -298,6 +346,15 @@ public class MainActivity extends AppCompatActivity
         itagList.setAdapter(cursorAdapter);
         getLoaderManager().initLoader(0, null, this);
     }
+
+
+    private void kasujZaznaczone() {
+        long zaznaczone[] = itagList.getCheckedItemIds();
+        for (int i = 0; i < zaznaczone.length; ++i) {
+            getContentResolver().delete(ContentUris.withAppendedId(MyContentProvider.URI_ZAWARTOSCI, zaznaczone[i]), null, null);
+        }
+    }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -443,7 +500,7 @@ public class MainActivity extends AppCompatActivity
 
             if (!scannedDevices.contains(result.getDevice())) {
                 boolean isInDatabase = false;
-                if(itsNewDevice) {
+                if (itsNewDevice) {
                     Cursor cursor = getContentResolver()
                             .query(MyContentProvider.URI_ZAWARTOSCI, new String[]{DBHelper.ADDRESS}, null, null, null);
 
@@ -515,19 +572,18 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void findDevice(String address) {
-        Log.d("MainActivity", "findDevice()");
-        Log.d("MainActivity", "findDevice() - address: "+address);
-        Log.d("MainActivity", "devs size: "+scannedDevices.size());
-
-        //if (!scannedDevices.isEmpty() && address != null && !address.equals("")) {
-            Log.d("MainActivity", "lista zeskanowanych nie jest pusta, ani adres");
-            for(BluetoothDevice bd : scannedDevices) {
-                Log.d("MainActivity", "sprawdzanie elementu: " + bd.getAddress());
-                if (bd.getAddress().equals(address)) {
-                    connectToDeviceSelected(bd);
-                }
-            //}
+        boolean found = false;
+        for (BluetoothDevice bd : scannedDevices) {
+            if (bd.getAddress().equals(address)) {
+                found = true;
+                connectToDeviceSelected(bd);
+            }
         }
+
+        if (found) pressedSwitch.setChecked(true);
+        else pressedSwitch.setChecked(false);
+
+        pSwitch = false;
     }
 
 
@@ -559,6 +615,9 @@ public class MainActivity extends AppCompatActivity
 
             myDevices.remove(address);
             myDevicesState.put(address, false);
+
+            pressedSwitch.setChecked(false);
+            pSwitch = false;
         }
     }
 
@@ -580,9 +639,6 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-
-
-
     //(☞ ͡° ͜ʖ ͡°)☞ CALLBACK DO DEVICE CONNECT
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
 
@@ -597,7 +653,7 @@ public class MainActivity extends AppCompatActivity
             UUID uuid = characteristic.getUuid();
             String address = gatt.getDevice().getAddress();
 
-            if(!ringtone) {
+            if (!ringtone) {
                 ringtone = true;
                 startRing(address);
             } else {
@@ -612,14 +668,13 @@ public class MainActivity extends AppCompatActivity
                 case BluetoothProfile.STATE_CONNECTED:
                     gatt.discoverServices();
                     Log.d("MainActivity", "POŁĄCZONO Z " + gatt.getDevice().getAddress());
-                    myDevicesState.put(gatt.getDevice().getAddress(), true);
-                    getLoaderManager().restartLoader(0,null, MainActivity.this);
+
                     break;
 
                 case BluetoothProfile.STATE_DISCONNECTED:
                     Log.d("MainActivity", "ROZŁĄCZONO Z " + gatt.getDevice().getAddress());
-                    myDevicesState.put(gatt.getDevice().getAddress(), false);
-                    getLoaderManager().restartLoader(0,null, MainActivity.this);
+
+
                     break;
 
                 default:
@@ -648,7 +703,7 @@ public class MainActivity extends AppCompatActivity
                     for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
 
                         for (BluetoothGattDescriptor descriptor : gattCharacteristic.getDescriptors()) {
-                            if(descriptor != null) {
+                            if (descriptor != null) {
                                 descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
                                 gatt.writeDescriptor(descriptor);
                             }
@@ -656,14 +711,8 @@ public class MainActivity extends AppCompatActivity
                         gatt.setCharacteristicNotification(gattCharacteristic, true);
 
 
-
-
                     }
                 }
-
-
-
-
 
 
                 for (BluetoothGattService service : gatt.getServices()) {
@@ -731,18 +780,18 @@ public class MainActivity extends AppCompatActivity
 
         for (BluetoothGattService gattService : gattServices) {
             final String uuid = gattService.getUuid().toString();
-            Log.d("SERVICES", "Service disovered: "+uuid);
+            Log.d("SERVICES", "Service disovered: " + uuid);
 
             //new ArrayList<HashMap<String, String>>();
             List<BluetoothGattCharacteristic> gattCharacteristics = gattService.getCharacteristics();
             for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
                 final String charUuid = gattCharacteristic.getUuid().toString();
-                Log.d("CHARACTERISTICS", "Characteristic discovered for service: "+charUuid);
+                Log.d("CHARACTERISTICS", "Characteristic discovered for service: " + charUuid);
 
                 List<BluetoothGattDescriptor> gattDescriptors = gattCharacteristic.getDescriptors();
-                for(BluetoothGattDescriptor gattDescriptor : gattDescriptors) {
+                for (BluetoothGattDescriptor gattDescriptor : gattDescriptors) {
                     final String descUuid = gattDescriptor.getUuid().toString();
-                    Log.d("DESCRIPTORS", "Descriptor discovered for characteristic: "+descUuid);
+                    Log.d("DESCRIPTORS", "Descriptor discovered for characteristic: " + descUuid);
                 }
             }
         }
@@ -753,10 +802,8 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-
-
     private void startRing(String addr) {
-        Log.d("sylwka","startRing()");
+        Log.d("sylwka", "startRing()");
         if (currentRingtone != null) {
             currentRingtone.stop();
             currentRingtone = null;
@@ -766,7 +813,7 @@ public class MainActivity extends AppCompatActivity
         currentRingtone = RingtoneManager.getRingtone(this, sound);
 
         if (currentRingtone == null) {
-            Log.d("sylwka","R.string.ring_tone_not_found");
+            Log.d("sylwka", "R.string.ring_tone_not_found");
             return;
         }
 
@@ -778,8 +825,8 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void stopRing() {
-        Log.d("sylwka","stopRing()");
-        if(currentRingtone != null) {
+        Log.d("sylwka", "stopRing()");
+        if (currentRingtone != null) {
             currentRingtone.stop();
         }
     }
