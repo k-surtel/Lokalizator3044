@@ -8,6 +8,22 @@
     tools:context="com.example.k.lokalizator3044.MainActivity"
     tools:showIn="@layout/app_bar_main">
 
+    <LinearLayout
+        android:id="@+id/linlaHeaderProgress"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone" >
+
+        <ProgressBar
+            android:id="@+id/pbHeaderProgress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="?android:attr/progressBarStyleLarge">
+        </ProgressBar>
+    </LinearLayout>
+
     <ListView
         android:id="@+id/itag_list"
         android:layout_width="match_parent"

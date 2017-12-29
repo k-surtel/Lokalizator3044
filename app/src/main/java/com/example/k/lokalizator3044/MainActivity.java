@@ -49,11 +49,11 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.Switch;
 import android.widget.Toast;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -70,6 +70,7 @@ public class MainActivity extends AppCompatActivity
     BluetoothLeScanner mBluetoothScanner;
     private Handler mHandler = new Handler();
     private SimpleCursorAdapter cursorAdapter;
+    //private MySimpleCursorAdapter cursorAdapter;
 
     ArrayList<BluetoothDevice> scannedDevices = new ArrayList<>();
     ArrayList<String> scannedDevicesNames = new ArrayList<>();
@@ -134,6 +135,15 @@ public class MainActivity extends AppCompatActivity
     boolean pSwitch = false;
     Switch pressedSwitch;
 
+    View itagAddress;
+    View alarmButton;
+    View settingsButton;
+
+    LinearLayout linlaHeaderProgress;
+
+    public static String NEW_ITAG_ACTIVITY = "new itag activity";
+    public static String ITAG_ACTIVITY = "itag activity";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -186,32 +196,96 @@ public class MainActivity extends AppCompatActivity
 
         itagList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
+            int sameCount = 1;
+            boolean same;
+
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 // Get the cursor, positioned to the corresponding row in the result set
                 Cursor cursor = (Cursor) itagList.getItemAtPosition(position);
-
                 // Get the state's capital from this row in the database.
-                String address = cursor.getString(cursor.getColumnIndexOrThrow(DBHelper.ADDRESS));
-                Log.d("MainActivity", "ADDR = " + address);
+                final String address = cursor.getString(cursor.getColumnIndexOrThrow(DBHelper.ADDRESS));
 
-                if (myDevices.get(address) != null && myDevicesState.get(address) && myGatts.get(address) != null && !alert) {
-                    BluetoothGatt gatt = myGatts.get(address);
-                    bc = findCharacteristic(address, CHAR_ALERT_LEVEL_UUID);
-                    if (bc != null) {
-                        bc.setValue(new byte[]{(byte) 0x01});
-                        alert = true;
-                        gatt.writeCharacteristic(bc);
-                    }
-                } else if (myDevices.get(address) != null && myDevicesState.get(address) && myGatts.get(address) != null && alert) {
-                    BluetoothGatt gatt = myGatts.get(address);
-                    bc = findCharacteristic(address, CHAR_ALERT_LEVEL_UUID);
-                    if (bc != null) {
-                        bc.setValue(new byte[]{(byte) 0x00});
-                        alert = false;
-                        gatt.writeCharacteristic(bc);
-                    }
+                //cursorAdapter.selectedItem(position);
+                //cursorAdapter.notifyDataSetChanged();
+
+                Log.d("CLICK", "same = "+same);
+                Log.d("CLICK", "sameCount = "+sameCount);
+
+                if(itagAddress == view.findViewById(R.id.itag_address)) {
+                    same = true;
+                    sameCount++;
                 }
+                else {
+                    same = false;
+                    sameCount = 1;
+                }
+
+                if((itagAddress != null && itagAddress.getTag() != null && (boolean)itagAddress.getTag()) || same) {
+                    itagAddress.setVisibility(View.GONE);
+                    itagAddress.setTag(false);
+                }
+                if((alarmButton != null && alarmButton.getTag() != null && (boolean)alarmButton.getTag()) || same) {
+                    alarmButton.setVisibility(View.GONE);
+                    alarmButton.setTag(false);
+                }
+                if((settingsButton != null && settingsButton.getTag() != null && (boolean)settingsButton.getTag()) || same) {
+                    settingsButton.setVisibility(View.GONE);
+                    settingsButton.setTag(false);
+                }
+
+                if(!same || (same && sameCount%2 != 0 && sameCount > 1)) {
+                    itagAddress = view.findViewById(R.id.itag_address);
+                    alarmButton = view.findViewById(R.id.itag_alarm);
+                    settingsButton = view.findViewById(R.id.itag_settings);
+
+                    itagAddress.setVisibility(View.VISIBLE);
+                    itagAddress.setTag(true);
+                    alarmButton.setVisibility(View.VISIBLE);
+                    alarmButton.setTag(true);
+                    settingsButton.setVisibility(View.VISIBLE);
+                    settingsButton.setTag(true);
+                }
+
+                alarmButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        final String addr = address;
+
+                        if (myDevices.get(addr) != null && myDevicesState.get(addr) && myGatts.get(addr) != null && !alert) {
+                            BluetoothGatt gatt = myGatts.get(addr);
+                            bc = findCharacteristic(addr, CHAR_ALERT_LEVEL_UUID);
+                            if (bc != null) {
+                                bc.setValue(new byte[]{(byte) 0x01});
+                                alert = true;
+                                gatt.writeCharacteristic(bc);
+                            }
+                        } else if (myDevices.get(addr) != null && myDevicesState.get(addr) && myGatts.get(addr) != null && alert) {
+                            BluetoothGatt gatt = myGatts.get(addr);
+                            bc = findCharacteristic(addr, CHAR_ALERT_LEVEL_UUID);
+                            if (bc != null) {
+                                bc.setValue(new byte[]{(byte) 0x00});
+                                alert = false;
+                                gatt.writeCharacteristic(bc);
+                            }
+                        }
+                    }
+                });
+
+                settingsButton.setOnClickListener(new View.OnClickListener() {
+
+                    final String addr = address;
+
+                    @Override
+                    public void onClick(View v) {
+                        Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
+                        intent.putExtra(ITAG_ACTIVITY, addr);
+                        intent.putExtra(NEW_ITAG_ACTIVITY, false);
+                        startActivity(intent);
+                    }
+                });
+
+
             }
         });
 
@@ -252,6 +326,12 @@ public class MainActivity extends AppCompatActivity
                 //tb.setVisibility(View.VISIBLE);
             }
         });
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
     }
 
     //TODO: ZROBIĆ TO NA BLE NIE ZWYŁYM BT [https://www.bignerdranch.com/blog/bluetooth-low-energy-part-1/]
@@ -303,21 +383,19 @@ public class MainActivity extends AppCompatActivity
 
     private void wypelnijListe() {
         Log.d("LOKLIZATOR", "Wypełnij listę!");
-        String[] mapujZ = new String[]{DBHelper.NAME, DBHelper.ADDRESS};
-        int[] mapujDo = new int[]{R.id.itag_name, R.id.if_enabled};
+        String[] mapujZ = new String[]{DBHelper.NAME, DBHelper.ADDRESS, DBHelper.ID};
+        int[] mapujDo = new int[]{R.id.itag_name, R.id.itag_address, R.id.if_enabled};
 
-        cursorAdapter = new SimpleCursorAdapter(this, R.layout.itag, null, mapujZ, mapujDo, 0);
+        //cursorAdapter = new MySimpleCursorAdapter(this, R.layout.selected_itag, null, mapujZ, mapujDo, 0);
+        cursorAdapter = new SimpleCursorAdapter(this, R.layout.selected_itag, null, mapujZ, mapujDo, 0);
         cursorAdapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
             @Override
             public boolean setViewValue(final View view, final Cursor cursor, int i) {
-                numberOfDevices = cursorAdapter.getCount();
-                Log.d("MainActivity", "numberOfDevices = " + numberOfDevices);
 
-                if (i == cursor.getColumnIndexOrThrow(DBHelper.ADDRESS)) {
+                if (i == cursor.getColumnIndexOrThrow(DBHelper.ID)) {
                     final Switch s = (Switch) view;
 
-                    if (myDevicesState.get(cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS))))
-                        s.setChecked(true);
+                    if (myDevicesState.get(cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS)))) s.setChecked(true);
                     else s.setChecked(false);
 
                     view.setTag(cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS)));
@@ -470,6 +548,9 @@ public class MainActivity extends AppCompatActivity
 
         final String addr = address;
 
+        linlaHeaderProgress = (LinearLayout) findViewById(R.id.linlaHeaderProgress);
+        linlaHeaderProgress.setVisibility(View.VISIBLE);
+
         if (!scanningActive) {
 
             scanningActive = true;
@@ -488,6 +569,7 @@ public class MainActivity extends AppCompatActivity
                 public void run() {
                     stopScan(addr);
                 }
+
             }, SCAN_PERIOD);
         }
     }
@@ -539,7 +621,10 @@ public class MainActivity extends AppCompatActivity
                 mBluetoothScanner.stopScan(scanCallback);
             }
         });
-        if (itsNewDevice) adaptujListe();
+        if (itsNewDevice) {
+            linlaHeaderProgress.setVisibility(View.GONE);
+            adaptujListe();
+        }
         else findDevice(address);
         scanningActive = false;
     }
@@ -581,7 +666,11 @@ public class MainActivity extends AppCompatActivity
         }
 
         if (found) pressedSwitch.setChecked(true);
-        else pressedSwitch.setChecked(false);
+        else {
+            Toast.makeText(this, "Nie znaleziono urządzenia!", Toast.LENGTH_SHORT).show();
+            linlaHeaderProgress.setVisibility(View.GONE);
+            pressedSwitch.setChecked(false);
+        }
 
         pSwitch = false;
     }
@@ -596,13 +685,13 @@ public class MainActivity extends AppCompatActivity
         myDevices.put(bd.getAddress(), bd);
         myDevicesState.put(bd.getAddress(), true);
         Toast.makeText(MainActivity.this, "Połączono do " + bd.getAddress(), Toast.LENGTH_SHORT).show();
+        linlaHeaderProgress.setVisibility(View.GONE);
 
         if (itsNewDevice) {
             myDevicesState.put(bd.getAddress(), true);
-
             Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
-            intent.putExtra("itag", bd);
-            intent.putExtra("edit", false);
+            intent.putExtra(ITAG_ACTIVITY, bd.getAddress());
+            intent.putExtra(NEW_ITAG_ACTIVITY, itsNewDevice);
             startActivity(intent);
         }
     }
@@ -668,12 +757,15 @@ public class MainActivity extends AppCompatActivity
                 case BluetoothProfile.STATE_CONNECTED:
                     gatt.discoverServices();
                     Log.d("MainActivity", "POŁĄCZONO Z " + gatt.getDevice().getAddress());
+                    myDevicesState.put(gatt.getDevice().getAddress(), true);
+                    //cursorAdapter.notifyDataSetChanged();
 
                     break;
 
                 case BluetoothProfile.STATE_DISCONNECTED:
                     Log.d("MainActivity", "ROZŁĄCZONO Z " + gatt.getDevice().getAddress());
-
+                    myDevicesState.put(gatt.getDevice().getAddress(), false);
+                    //cursorAdapter.notifyDataSetChanged();
 
                     break;
 

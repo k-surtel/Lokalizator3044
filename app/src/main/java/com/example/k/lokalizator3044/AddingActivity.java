@@ -1,6 +1,5 @@
 package com.example.k.lokalizator3044;
 
-import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
@@ -26,44 +25,33 @@ import java.util.List;
 
 public class AddingActivity extends AppCompatActivity {
 
-    boolean ifEdit;
-
+    boolean newItag;
+    Uri uri;
     EditText addName;
     Spinner modeSpinner;
     Spinner ringtoneSpinner;
     Spinner distanceSpinner;
     Spinner clickSpinner;
     Spinner doubleClickSpinner;
-    Devices d;
+    String deviceAddress;
     Button cancelBtn;
     Button saveBtn;
 
-    Uri uri;
-
-    BluetoothDevice connectedDevice;
-    BluetoothGatt bluetoothGatt;
-
-    //(☞ ͡° ͜ʖ ͡°)☞ NIE WIEM
-    public final static String ACTION_DATA_AVAILABLE =
-            "com.example.bluetooth.le.ACTION_DATA_AVAILABLE";
+    int id;
+    String name;
+    String workingMode;
+    String ringtone;
+    String distance;
+    String click;
+    String doubleClick;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        Devices d = new Devices();
 
-        //tuuuuu?
         Bundle myBundle = getIntent().getExtras();
-        connectedDevice = (BluetoothDevice)myBundle.get("itag");
-        ifEdit = myBundle.getBoolean("edit");
-
-        //connectToDeviceSelected(connectedDevice);
-
-        d.context = this;
-        d.callback = btleGattCallback;
-        d.bleDevice = connectedDevice;
-
-        //d.connectToDeviceSelected();
+        deviceAddress = myBundle.getString(MainActivity.ITAG_ACTIVITY);
+        newItag = myBundle.getBoolean(MainActivity.NEW_ITAG_ACTIVITY);
 
 
         super.onCreate(savedInstanceState);
@@ -102,7 +90,32 @@ public class AddingActivity extends AppCompatActivity {
         doubleClickAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         doubleClickSpinner.setAdapter(doubleClickAdapter);
 
-        //if ifedit trueeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee!!!!
+        if(!newItag) {
+            Cursor cursor = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI, null, null, null, null);
+            if(cursor.moveToFirst()){
+                do {
+                    if(deviceAddress.equals(cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS)))) {
+                        id = cursor.getInt(cursor.getColumnIndex(DBHelper.ID));
+                        name = cursor.getString(cursor.getColumnIndex(DBHelper.NAME));
+                        workingMode = cursor.getString(cursor.getColumnIndex(DBHelper.WORKING_MODE));
+                        ringtone = cursor.getString(cursor.getColumnIndex(DBHelper.RINGTONE));
+                        distance = cursor.getString(cursor.getColumnIndex(DBHelper.DISTANCE));
+                        click = cursor.getString(cursor.getColumnIndex(DBHelper.CLICK));
+                        doubleClick = cursor.getString(cursor.getColumnIndex(DBHelper.DOUBLE_CLICK));
+                    }
+                } while (cursor.moveToNext());
+            }
+
+            addName.setText(name);
+            modeSpinner.setSelection(modeAdapter.getPosition(workingMode));
+            ringtoneSpinner.setSelection(ringtoneAdapter.getPosition(ringtone));
+            distanceSpinner.setSelection(distanceAdapter.getPosition(distance));
+            clickSpinner.setSelection(clickAdapter.getPosition(click));
+            doubleClickSpinner.setSelection(doubleClickAdapter.getPosition(doubleClick));
+
+
+            uri = Uri.parse(MyContentProvider.URI_ZAWARTOSCI + "/" + id);
+        }
 
         cancelBtn = findViewById(R.id.add_cancel_btn);
         cancelBtn.setOnClickListener(new View.OnClickListener() {
@@ -118,7 +131,7 @@ public class AddingActivity extends AppCompatActivity {
             public void onClick(View view) {
                 Log.d("LOKLIZATOR", "Save button pressed!");
                 ContentValues values = new ContentValues();
-                values.put(DBHelper.ADDRESS, connectedDevice.getAddress());
+                values.put(DBHelper.ADDRESS, deviceAddress);
                 values.put(DBHelper.NAME, addName.getText().toString());
                 values.put(DBHelper.WORKING_MODE, modeSpinner.getSelectedItem().toString());
                 values.put(DBHelper.RINGTONE, ringtoneSpinner.getSelectedItem().toString());
@@ -128,161 +141,12 @@ public class AddingActivity extends AppCompatActivity {
                 values.put(DBHelper.DOUBLE_CLICK, doubleClickSpinner.getSelectedItem().toString());
                 //values.put(DBHelper.IF_ENABLED, 1);
 
-                //if(ifEdit) getContentResolver().update(uri, values, null, null);
-                //else {
-                   /* final AlertDialog.Builder builder = new AlertDialog.Builder(AddingActivity.this);
-                    builder.setTitle("XOXO");
-                builder.setMessage(new StringBuilder().append("Mac address: " + connectedDevice.getAddress().toString() + "\nName: " + addName.getText().toString()).append("\nWorking mode: ").append(modeSpinner.getSelectedItem().toString()).toString());
-                builder.setPositiveButton(android.R.string.ok, null);
-                    builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                if(newItag) getContentResolver().insert(MyContentProvider.URI_ZAWARTOSCI, values);
+                else getContentResolver().update(uri, values, null, null);
 
-                        @Override
-                        public void onDismiss(DialogInterface dialog) {
-                        }
-                    });
-                    builder.show();*/
-
-                getContentResolver().insert(MyContentProvider.URI_ZAWARTOSCI, values);
-
-                //Devices d = new Devices();
-                //d.devicesDiscovered.put(id, connectedDevice);
-                Intent intent = getIntent();
-                intent.putExtra("addr", connectedDevice.getAddress());
-                intent.putExtra("bleDevice", connectedDevice);
-                setResult(RESULT_OK, intent);
                 finish();
-
-               //}
-
-                //Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                //startActivity(intent);
             }
         });
 
-    }
-
-    //(☞ ͡° ͜ʖ ͡°)☞ POŁĄCZENIE DO URZĄDZENIA
-    public void connectToDeviceSelected(BluetoothDevice connectedDevice) {
-        //peripheralTextView.append("Trying to connect to device at index: " + deviceIndexInput.getText() + "\n");
-        //int deviceSelected = Integer.parseInt(deviceIndexInput.getText().toString());
-        bluetoothGatt = connectedDevice.connectGatt(this, false, btleGattCallback);
-        Toast.makeText(AddingActivity.this, "Połączono", Toast.LENGTH_SHORT).show();
-    }
-
-    public void disconnectDeviceSelected() {
-        Log.d("AddingActivity", "disconnectDeviceSelected()");
-        bluetoothGatt.disconnect();
-    }
-
-    //(☞ ͡° ͜ʖ ͡°)☞ CALLBACK DO DEVICE CONNECT
-    private final BluetoothGattCallback btleGattCallback = new BluetoothGattCallback() {
-
-        @Override
-        public void onCharacteristicChanged(BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic) {
-            // this will get called anytime you perform a read or write characteristic operation
-            AddingActivity.this.runOnUiThread(new Runnable() {
-                public void run() {
-                    //peripheralTextView.append("device read or wrote to\n");
-                }
-            });
-        }
-
-        @Override
-        public void onConnectionStateChange(final BluetoothGatt gatt, final int status, final int newState) {
-            // this will get called when a device connects or disconnects
-            System.out.println(newState);
-            switch (newState) {
-                case 0:
-                    AddingActivity.this.runOnUiThread(new Runnable() {
-                        public void run() {
-                            //peripheralTextView.append("device disconnected\n");
-                            Log.d("LOKLIZATOR", "ROZŁĄCZONO!!!!!!!!!!!!!!!!!!");
-                        }
-                    });
-                    break;
-                case 2:
-                    AddingActivity.this.runOnUiThread(new Runnable() {
-                        public void run() {
-                            //peripheralTextView.append("device connected\n");
-                            Toast.makeText(AddingActivity.this, "Połączono", Toast.LENGTH_LONG).show();
-                        }
-                    });
-
-                    // discover services and characteristics for this device
-                    d.bluetoothGatt.discoverServices();
-
-                    break;
-                default:
-                    AddingActivity.this.runOnUiThread(new Runnable() {
-                        public void run() {
-                            //peripheralTextView.append("we encounterned an unknown state, uh oh\n");
-                        }
-                    });
-                    break;
-            }
-        }
-
-        @Override
-        public void onServicesDiscovered(final BluetoothGatt gatt, final int status) {
-            // this will get called after the client initiates a 			BluetoothGatt.discoverServices() call
-            AddingActivity.this.runOnUiThread(new Runnable() {
-                public void run() {
-                    // peripheralTextView.append("device services have been discovered\n");
-                }
-            });
-            displayGattServices(d.bluetoothGatt.getServices());
-        }
-
-        @Override
-        // Result of a characteristic read operation
-        public void onCharacteristicRead(BluetoothGatt gatt,
-                                         BluetoothGattCharacteristic characteristic,
-                                         int status) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
-            }
-        }
-    };
-
-
-    //(☞ ͡° ͜ʖ ͡°)☞ NIE WIEM
-    private void displayGattServices(List<BluetoothGattService> gattServices) {
-        if (gattServices == null) return;
-
-        // Loops through available GATT Services.
-        for (BluetoothGattService gattService : gattServices) {
-
-            final String uuid = gattService.getUuid().toString();
-            System.out.println("Service discovered: " + uuid);
-            AddingActivity.this.runOnUiThread(new Runnable() {
-                public void run() {
-                    //peripheralTextView.append("Service disovered: "+uuid+"\n");
-                }
-            });
-            new ArrayList<HashMap<String, String>>();
-            List<BluetoothGattCharacteristic> gattCharacteristics =
-                    gattService.getCharacteristics();
-
-            // Loops through available Characteristics.
-            for (BluetoothGattCharacteristic gattCharacteristic :
-                    gattCharacteristics) {
-
-                final String charUuid = gattCharacteristic.getUuid().toString();
-                System.out.println("Characteristic discovered for service: " + charUuid);
-                AddingActivity.this.runOnUiThread(new Runnable() {
-                    public void run() {
-                        //peripheralTextView.append("Characteristic discovered for service: "+charUuid+"\n");
-                    }
-                });
-
-            }
-        }
-    }
-
-    //(☞ ͡° ͜ʖ ͡°)☞ NIE WIEM
-    private void broadcastUpdate(final String action,
-                                 final BluetoothGattCharacteristic characteristic) {
-
-        System.out.println(characteristic.getUuid());
     }
 }
