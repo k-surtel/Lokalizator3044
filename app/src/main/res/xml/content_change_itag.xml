@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_below="@+id/appbar"
+    tools:context="com.example.k.lokalizator3044.AddingActivity">
+
+    <EditTextPreference
+        android:capitalize="words"
+        android:inputType="textCapWords"
+        android:key="itag_name"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="Nazwa urządzenia" />
+
+    <ListPreference
+        android:entries="@array/mode_array"
+        android:entryValues="@array/mode_array"
+        android:key="itag_mode"
+        android:negativeButtonText="@null"
+        android:positiveButtonText="@null"
+        android:title="Tryb pracy"
+        android:summary="%s"/>
+
+    <Preference
+        android:defaultValue="content://settings/system/notification_sound"
+        android:key="ringtone_preference"
+        android:ringtoneType="notification"
+        android:title="Dźwięk dzwonka" />
+
+    <ListPreference
+        android:entries="@array/distance_array"
+        android:entryValues="@array/distance_array"
+        android:key="itag_distance"
+        android:negativeButtonText="@null"
+        android:positiveButtonText="@null"
+        android:title="Odległość od urządzenia"
+        android:summary="%s"/>
+
+    <ListPreference
+        android:entries="@array/click_array"
+        android:entryValues="@array/click_array"
+        android:key="itag_click"
+        android:negativeButtonText="@null"
+        android:positiveButtonText="@null"
+        android:title="Akcja przycisku"
+        android:summary="%s"/>
+
+    <ListPreference
+        android:entries="@array/double_click_array"
+        android:entryValues="@array/double_click_array"
+        android:key="itag_double_click"
+        android:negativeButtonText="@null"
+        android:positiveButtonText="@null"
+        android:title="Akcja podwójnego użycia przycisku"
+        android:summary="%s"/>
+
+</PreferenceScreen>

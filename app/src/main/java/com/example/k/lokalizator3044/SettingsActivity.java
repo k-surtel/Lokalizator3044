@@ -1,6 +1,9 @@
 package com.example.k.lokalizator3044;
 
+import android.app.Fragment;
 import android.content.Intent;
+import android.preference.PreferenceActivity;
+import android.preference.PreferenceFragment;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -14,17 +17,21 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 
+
 public class SettingsActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main_no_fab);
+
 
         //(☞ ͡° ͜ʖ ͡°)☞ USTAWIENIA WIDOCZKÓFF
         findViewById(R.id.about_content).setVisibility(View.GONE);
-        findViewById(R.id.settings_content).setVisibility(View.VISIBLE);
+        //findViewById(R.id.settings_content).setVisibility(View.VISIBLE);
+
 
         //(☞ ͡° ͜ʖ ͡°)☞ TOOLBAR - TEN PASEK NA GÓRZE
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -40,33 +47,37 @@ public class SettingsActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        //(☞ ͡° ͜ʖ ͡°)☞ LISTY ROZWIJANE - SPINNER
-        Spinner modeSpinner = (Spinner)findViewById(R.id.edit_mode_spinner);
-        // Create an ArrayAdapter using the string array and a default spinner layout
-        ArrayAdapter<CharSequence> modeAdapter = ArrayAdapter.createFromResource(this,
-                R.array.mode_array, android.R.layout.simple_spinner_item);
-        // Specify the layout to use when the list of choices appears
-        modeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        // Apply the adapter to the spinner
-        modeSpinner.setAdapter(modeAdapter);
 
-        Spinner ringtoneSpinner = (Spinner)findViewById(R.id.edit_ringtone_spinner);
-        ArrayAdapter<CharSequence> ringtoneAdapter = ArrayAdapter.createFromResource(this,
-                R.array.ringtones_array, android.R.layout.simple_spinner_item);
-        ringtoneAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        ringtoneSpinner.setAdapter(ringtoneAdapter);
 
-        Spinner distanceSpinner = (Spinner)findViewById(R.id.edit_distance_spinner);
-        ArrayAdapter<CharSequence> distanceAdapter = ArrayAdapter.createFromResource(this,
-                R.array.distance_array, android.R.layout.simple_spinner_item);
-        distanceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        distanceSpinner.setAdapter(distanceAdapter);
 
-        Spinner buttonSpinner = (Spinner)findViewById(R.id.edit_button_spinner);
-        ArrayAdapter<CharSequence> buttonAdapter = ArrayAdapter.createFromResource(this,
-                R.array.click_array, android.R.layout.simple_spinner_item);
-        buttonAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        buttonSpinner.setAdapter(buttonAdapter);
+
+//        //(☞ ͡° ͜ʖ ͡°)☞ LISTY ROZWIJANE - SPINNER
+//        Spinner modeSpinner = (Spinner)findViewById(R.id.edit_mode_spinner);
+//        // Create an ArrayAdapter using the string array and a default spinner layout
+//        ArrayAdapter<CharSequence> modeAdapter = ArrayAdapter.createFromResource(this,
+//                R.array.mode_array, android.R.layout.simple_spinner_item);
+//        // Specify the layout to use when the list of choices appears
+//        modeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+//        // Apply the adapter to the spinner
+//        modeSpinner.setAdapter(modeAdapter);
+//
+//        Spinner ringtoneSpinner = (Spinner)findViewById(R.id.edit_ringtone_spinner);
+//        ArrayAdapter<CharSequence> ringtoneAdapter = ArrayAdapter.createFromResource(this,
+//                R.array.ringtones_array, android.R.layout.simple_spinner_item);
+//        ringtoneAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+//        ringtoneSpinner.setAdapter(ringtoneAdapter);
+//
+//        Spinner distanceSpinner = (Spinner)findViewById(R.id.edit_distance_spinner);
+//        ArrayAdapter<CharSequence> distanceAdapter = ArrayAdapter.createFromResource(this,
+//                R.array.distance_array, android.R.layout.simple_spinner_item);
+//        distanceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+//        distanceSpinner.setAdapter(distanceAdapter);
+//
+//        Spinner buttonSpinner = (Spinner)findViewById(R.id.edit_button_spinner);
+//        ArrayAdapter<CharSequence> buttonAdapter = ArrayAdapter.createFromResource(this,
+//                R.array.click_array, android.R.layout.simple_spinner_item);
+//        buttonAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+//        buttonSpinner.setAdapter(buttonAdapter);
     }
 
     //(☞ ͡° ͜ʖ ͡°)☞ CHOWAJKA WYSUWANEGO PANELU

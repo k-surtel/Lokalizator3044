@@ -1,5 +1,6 @@
 package com.example.k.lokalizator3044;
 
+import android.app.Fragment;
 import android.content.Intent;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -22,7 +23,7 @@ public class AboutActivity extends AppCompatActivity
 
         //(☞ ͡° ͜ʖ ͡°)☞ USTAWIENIA WIDOCZKÓFF
         findViewById(R.id.about_content).setVisibility(View.VISIBLE);
-        findViewById(R.id.settings_content).setVisibility(View.GONE);
+        findViewById(R.id.content_settings).setVisibility(View.GONE);
 
         //(☞ ͡° ͜ʖ ͡°)☞ TOOLBAR - TEN PASEK NA GÓRZE
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);

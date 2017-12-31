@@ -108,6 +108,8 @@ public class MainActivity extends AppCompatActivity
     boolean scanningActive;
     BluetoothGattCharacteristic bc;
 
+    boolean addingMayFail;
+
     // 180A Device Information
     public static final UUID SERVICE_DEVICE_INFORMATION_UUID = UUID.fromString("0000180a-0000-1000-8000-00805f9b34fb");
     public static final String SERVICE_DEVICE_INFORMATION = "0000180a-0000-1000-8000-00805f9b34fb";
@@ -172,6 +174,7 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onClick(View view) {
                 //TODO: TYLE WYSTARCZY?
+                addingMayFail = true;
                 if (isBluetoothEnable()) {
                     itsNewDevice = true;
                     startScan(null);
@@ -281,7 +284,7 @@ public class MainActivity extends AppCompatActivity
                         Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
                         intent.putExtra(ITAG_ACTIVITY, addr);
                         intent.putExtra(NEW_ITAG_ACTIVITY, false);
-                        startActivity(intent);
+                        startActivityForResult(intent, 1);
                     }
                 });
 
@@ -440,7 +443,12 @@ public class MainActivity extends AppCompatActivity
         if (requestCode == 1) {
             // Make sure the request was successful
             if (resultCode == RESULT_OK) {
-
+                addingMayFail = false;
+            } else if (resultCode == RESULT_CANCELED) {
+                if(data.getExtras() != null) {
+                    disconnectDeviceSelected(data.getExtras().getString("a"));
+                    addingMayFail = false;
+                }
             }
         }
     }
@@ -692,7 +700,7 @@ public class MainActivity extends AppCompatActivity
             Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
             intent.putExtra(ITAG_ACTIVITY, bd.getAddress());
             intent.putExtra(NEW_ITAG_ACTIVITY, itsNewDevice);
-            startActivity(intent);
+            startActivityForResult(intent, 1);
         }
     }
 
@@ -705,8 +713,10 @@ public class MainActivity extends AppCompatActivity
             myDevices.remove(address);
             myDevicesState.put(address, false);
 
-            pressedSwitch.setChecked(false);
-            pSwitch = false;
+            if(!addingMayFail) {
+                pressedSwitch.setChecked(false);
+                pSwitch = false;
+            }
         }
     }
 
@@ -795,7 +805,7 @@ public class MainActivity extends AppCompatActivity
                     for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
 
                         for (BluetoothGattDescriptor descriptor : gattCharacteristic.getDescriptors()) {
-                            if (descriptor != null) {
+                            if (descriptor != null && gattCharacteristic.getUuid() == CHAR_ALERT_LEVEL_UUID) {
                                 descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
                                 gatt.writeDescriptor(descriptor);
                             }

@@ -2,7 +2,7 @@
 <resources>
     <string-array name="mode_array">
         <item>Tryb cichy</item>
-        <item>Tryb głośnt</item>
+        <item>Tryb głośny</item>
     </string-array>
 
     <string-array name="ringtones_array">
