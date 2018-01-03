@@ -1,0 +1,38 @@
+<android.support.v7.preference.PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_below="@+id/appbar"
+    tools:context="com.example.k.lokalizator3044.SettingsActivity">
+
+    <android.support.v7.preference.PreferenceCategory
+        android:key="the_key_to_retrieve_the_preference_in_code"
+        android:title="Kategory tajtel">
+
+    <SwitchPreferenceCompat
+        android:defaultValue="true"
+        android:key="example_switch"
+        android:summary="Summary"
+        android:title="Title" />
+
+    <ListPreference
+        android:defaultValue="-1"
+        android:entries="@array/click_array"
+        android:entryValues="@array/click_array"
+        android:key="example_list"
+        android:negativeButtonText="@null"
+        android:positiveButtonText="@null"
+        android:title="Title2"
+        android:summary="%s"/>
+
+    <Preference
+        android:defaultValue="content://settings/system/notification_sound"
+        android:key="notifications_new_message_ringtone"
+        android:ringtoneType="notification"
+        android:title="Title3" />
+
+    </android.support.v7.preference.PreferenceCategory>
+
+
+</android.support.v7.preference.PreferenceScreen>

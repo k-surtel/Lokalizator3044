@@ -26,6 +26,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.example.k.lokalizator3044.DatabaseManagement.DBHelper;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

@@ -34,12 +34,13 @@
         <activity
             android:name=".SettingsActivity"
             android:theme="@style/AppTheme.NoActionBar"
-            android:configChanges="orientation|screenSize"/>
+            android:configChanges="orientation|screenSize" />
         <activity android:name=".AddingActivity"
-            android:configChanges="orientation|screenSize"/>
+            android:configChanges="orientation|screenSize"
+             />
 
         <provider
-            android:name=".MyContentProvider"
+            android:name=".DatabaseManagement.MyContentProvider"
             android:authorities="com.example.k.lokalizator3044"
             android:enabled="true"
             android:exported="false"></provider>
