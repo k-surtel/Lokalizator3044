@@ -1,4 +1,4 @@
-package com.example.k.lokalizator3044;
+package com.example.k.lokalizator3044.DatabaseManagement;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -40,20 +40,5 @@ public class DBHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL(DELETE_BASE);
         onCreate(db);
-    }
-
-    public HashMap<String, Boolean> setFalseForEveryRecord() {
-        HashMap<String, Boolean> hm = new HashMap<>();
-        SQLiteDatabase baza = this.getWritableDatabase();
-        Cursor c = baza.query(DBHelper.TABLE_NAME, new String[]{DBHelper.ADDRESS},
-                null, null, null, null, null);
-        if (c.moveToFirst()) {
-            do {
-                hm.put(c.getString(c.getColumnIndex(DBHelper.ADDRESS)), false);
-            } while (c.moveToNext());
-        }
-        c.close();
-        baza.close();
-        return hm;
     }
 }

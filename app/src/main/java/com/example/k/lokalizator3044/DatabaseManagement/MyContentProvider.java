@@ -1,4 +1,4 @@
-package com.example.k.lokalizator3044;
+package com.example.k.lokalizator3044.DatabaseManagement;
 
 import android.content.ContentValues;
 import android.content.UriMatcher;
