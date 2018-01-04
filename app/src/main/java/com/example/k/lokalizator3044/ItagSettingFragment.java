@@ -137,7 +137,6 @@ public class ItagSettingFragment extends PreferenceFragmentCompat {
             Uri uri = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
 
             if (uri == null) Log.d("tag", "nie ma uri");
-                //TODO: eeeeeeeeeeeee
             else {
                 ringtonePreference.setSummary(uri.toString());
                 ((AddingActivity)getActivity()).ringtone = uri.toString();

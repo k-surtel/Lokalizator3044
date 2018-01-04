@@ -6,14 +6,17 @@ import android.app.Service;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.preference.PreferenceManager;
 import android.util.Log;
 
 /**
@@ -187,6 +190,19 @@ public class GPSTracker extends Service implements LocationListener {
 
     @Override
     public void onLocationChanged(Location location) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
+        int radius = Integer.parseInt(prefs.getString("gps_radius", "15"));
+
+        Location locationA = new Location("start");
+
+        locationA.setLatitude(Double.longBitsToDouble(prefs.getLong("latitude", 0)));
+        locationA.setLongitude(Double.longBitsToDouble(prefs.getLong("longitude", 0)));
+
+        String tryb = prefs.getString("gps_mode", "");
+
+
+        float distance = locationA.distanceTo(location);
+        if(distance <= radius && tryb.equals("Tryb cichy")) prefs.edit().putBoolean("tryb_cichy", true);
     }
 
     @Override

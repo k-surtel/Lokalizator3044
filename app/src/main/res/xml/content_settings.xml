@@ -31,10 +31,29 @@
             android:title="Rozpoznawanie lokalizacji" />
 
         <Preference
-            android:key="notifications_new_message_ringtone"
+            android:key="gps_localization"
             android:dependency="switch"
             android:title="Pobierz lokalizację"
             android:summary="Naciśnij, by pobrać lokalizację"/>
+
+        <EditTextPreference
+            android:inputType="number"
+            android:key="gps_radius"
+            android:maxLines="1"
+            android:dependency="switch"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Promień" />
+
+        <ListPreference
+            android:entries="@array/mode_array"
+            android:entryValues="@array/mode_array"
+            android:key="gps_mode"
+            android:negativeButtonText="@null"
+            android:positiveButtonText="@null"
+            android:summary="%s"
+            android:dependency="switch"
+            android:title="Tryb uruchamiany w obrębie lokalizacji" />
 
     </android.support.v7.preference.PreferenceCategory>
 

@@ -28,7 +28,6 @@ public class AddingActivity extends AppCompatActivity {
     String ringtone;
     String distance;
     String click;
-    String interval;
 
     Intent returnIntent = new Intent();
 
@@ -55,7 +54,6 @@ public class AddingActivity extends AppCompatActivity {
                         ringtone = cursor.getString(cursor.getColumnIndex(DBHelper.RINGTONE));
                         distance = cursor.getString(cursor.getColumnIndex(DBHelper.DISTANCE));
                         click = cursor.getString(cursor.getColumnIndex(DBHelper.CLICK));
-                        interval = cursor.getString(cursor.getColumnIndex(DBHelper.INTERVAL));
                         uri = Uri.parse(MyContentProvider.URI_ZAWARTOSCI + "/" + id);
                     }
                 } while (cursor.moveToNext());
@@ -91,7 +89,6 @@ public class AddingActivity extends AppCompatActivity {
                     values.put(DBHelper.RINGTONE, ringtone);
                     values.put(DBHelper.DISTANCE, distance);
                     values.put(DBHelper.CLICK, click);
-                    values.put(DBHelper.INTERVAL, interval);
 
                     if (newItag)
                         getContentResolver().insert(MyContentProvider.URI_ZAWARTOSCI, values);
@@ -115,7 +112,7 @@ public class AddingActivity extends AppCompatActivity {
     }
 
     private boolean isEverythingSet() {
-        if(name == null || workingMode == null || ringtone == null || distance == null || click == null || interval == null)
+        if(name == null || workingMode == null || ringtone == null || distance == null || click == null)
             return false;
         else return true;
     }

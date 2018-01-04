@@ -17,9 +17,13 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 
+import java.util.ArrayList;
+
 
 public class SettingsActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+
+    GPSTracker gps;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

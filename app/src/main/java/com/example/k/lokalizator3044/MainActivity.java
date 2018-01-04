@@ -29,6 +29,7 @@ import android.content.Loader;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.location.Location;
 import android.location.LocationManager;
 import android.media.AudioManager;
 import android.media.Ringtone;
@@ -38,6 +39,7 @@ import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Parcelable;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.support.design.widget.FloatingActionButton;
@@ -119,6 +121,9 @@ public class MainActivity extends AppCompatActivity
     String switchDeviceAddress;
     boolean switchNewDevice;
     Vibrator v;
+    boolean trybCichy = false;
+    SharedPreferences prefs;
+    GPSTracker gps = new GPSTracker(this);
 
     /** STATIC VALUES */
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 1;
@@ -152,6 +157,10 @@ public class MainActivity extends AppCompatActivity
     // 180F Battery Service
     public static final String SERVICE_BATTERY_SERVICE = "0000180F-0000-1000-8000-00805f9b34fb";
     public static final String CHAR_BATTERY_LEVEL = "00002a19-0000-1000-8000-00805f9b34fb";
+
+    public void setTryb(boolean b){
+        trybCichy = b;
+    }
 
 
     @Override
@@ -339,7 +348,7 @@ public class MainActivity extends AppCompatActivity
 
 
     public void checkRange() {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
         final Handler h = new Handler();
         final int d = Integer.parseInt(prefs.getString("itag_interval", "15")) * 1000;
@@ -474,19 +483,19 @@ public class MainActivity extends AppCompatActivity
             // Make sure the request was successful
             if (resultCode == RESULT_OK) {
                 addingMayFail = false;
+
             } else if (resultCode == RESULT_CANCELED) {
-                if(data.getExtras() != null) {
-                    Log.d("MainAcitvity", "addingactivity - result cancel");
-                    disconnectDeviceSelected(data.getExtras().getString("a"));
                     addingMayFail = false;
+                if(data.getExtras() != null)
+                    disconnectDeviceSelected(data.getExtras().getString("a"));
                 }
             }
         }
-    }
+
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        String[] projekcja = {DBHelper.ID, DBHelper.ADDRESS, DBHelper.NAME, DBHelper.WORKING_MODE, DBHelper.RINGTONE, DBHelper.DISTANCE, DBHelper.CLICK, DBHelper.INTERVAL};
+        String[] projekcja = {DBHelper.ID, DBHelper.ADDRESS, DBHelper.NAME, DBHelper.WORKING_MODE, DBHelper.RINGTONE, DBHelper.DISTANCE, DBHelper.CLICK};
         CursorLoader loaderKursora = new CursorLoader(this, MyContentProvider.URI_ZAWARTOSCI, projekcja, null, null, null);
         return loaderKursora;
     }
@@ -681,6 +690,7 @@ public class MainActivity extends AppCompatActivity
                     myDevices.put(scannedDevices.get(which).getAddress(), scannedDevices.get(which));
 
                     Log.d("MainAcitvity", "connect - new itag from list");
+
                     connectToDeviceSelected(scannedDevices.get(which));
                 }
             });
@@ -720,6 +730,7 @@ public class MainActivity extends AppCompatActivity
     }
 
 
+
     //(☞ ͡° ͜ʖ ͡°)☞ POŁĄCZENIE DO URZĄDZENIA
     public void connectToDeviceSelected(BluetoothDevice bd) {
         Log.d("MainActivity", "connectToDeviceSelected()");
@@ -728,19 +739,21 @@ public class MainActivity extends AppCompatActivity
         if(myGatts.isEmpty()) {
             mNotifyMgr.notify(0, mBuilder.build());
             checkRange();
+
+            if (switchNewDevice) {
+                myDevices.put(bd.getAddress(), bd);
+
+                Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
+                intent.putExtra(ITAG_ACTIVITY, bd.getAddress());
+                intent.putExtra(NEW_ITAG_ACTIVITY, switchNewDevice);
+                startActivityForResult(intent, 1);
+            }
         }
 
         myGatts.put(bd.getAddress(), bluetoothGatt);
         myDevices.put(bd.getAddress(), bd);
         Toast.makeText(MainActivity.this, "Połączono do " + bd.getAddress(), Toast.LENGTH_SHORT).show();
         linlaHeaderProgress.setVisibility(View.GONE);
-
-        if (switchNewDevice) {
-            Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
-            intent.putExtra(ITAG_ACTIVITY, bd.getAddress());
-            intent.putExtra(NEW_ITAG_ACTIVITY, switchNewDevice);
-            startActivityForResult(intent, 1);
-        }
     }
 
     public void disconnectDeviceSelected(String address) {
@@ -900,6 +913,8 @@ public class MainActivity extends AppCompatActivity
 
 
 
+
+
         @Override
         public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status){
             if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -913,6 +928,12 @@ public class MainActivity extends AppCompatActivity
                 if(c.moveToFirst()) dist = Integer.parseInt(c.getString(c.getColumnIndexOrThrow(DBHelper.DISTANCE)));
                 Log.d("MainActivity", String.valueOf(dist));
 
+                prefs = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+                trybCichy = prefs.getBoolean("switch", false);
+                if(trybCichy) trybCichy = prefs.getBoolean("tryb_cichy", false);
+
+                Log.d("MainActivity", "SWITCHH "+trybCichy);
+
 
 
                 Log.d("MainActivity", "BluetoothGatt ReadRssi"+rssi);
@@ -924,6 +945,8 @@ public class MainActivity extends AppCompatActivity
                             .setSmallIcon(R.drawable.common_ic_googleplayservices)
                             .setContentTitle("Lokalizator 3044")
                             .setContentText("Urządzenie "+c.getString(c.getColumnIndexOrThrow(DBHelper.NAME))+" jest poza zasięgiem!");
+
+                    if(trybCichy) Toast.makeText(MainActivity.this, "tryb cichy", Toast.LENGTH_LONG).show();
 
                     if(c.getString(c.getColumnIndexOrThrow(DBHelper.WORKING_MODE)).equals("Tryb głośny"))
                         mBuilder2.setSound(uri);
