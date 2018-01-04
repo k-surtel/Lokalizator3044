@@ -1,5 +1,4 @@
-<android.support.v7.preference.PreferenceScreen
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.v7.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -8,29 +7,34 @@
 
     <android.support.v7.preference.PreferenceCategory
         android:key="the_key_to_retrieve_the_preference_in_code"
-        android:title="Kategory tajtel">
+        android:title="Ustawienia iTagów">
 
-    <SwitchPreferenceCompat
-        android:defaultValue="true"
-        android:key="example_switch"
-        android:summary="Summary"
-        android:title="Title" />
+        <ListPreference
+            android:entries="@array/time_interval_array"
+            android:entryValues="@array/time_interval_array_values"
+            android:key="itag_interval"
+            android:negativeButtonText="@null"
+            android:positiveButtonText="@null"
+            android:summary="%s"
+            android:title="Interwał sprawdzania odległości" />
 
-    <ListPreference
-        android:defaultValue="-1"
-        android:entries="@array/click_array"
-        android:entryValues="@array/click_array"
-        android:key="example_list"
-        android:negativeButtonText="@null"
-        android:positiveButtonText="@null"
-        android:title="Title2"
-        android:summary="%s"/>
 
-    <Preference
-        android:defaultValue="content://settings/system/notification_sound"
-        android:key="notifications_new_message_ringtone"
-        android:ringtoneType="notification"
-        android:title="Title3" />
+    </android.support.v7.preference.PreferenceCategory>
+
+    <android.support.v7.preference.PreferenceCategory
+        android:key="the_key_to_retrieve_the_preference_in_c"
+        android:title="Lokalizacja">
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="switch"
+            android:title="Rozpoznawanie lokalizacji" />
+
+        <Preference
+            android:key="notifications_new_message_ringtone"
+            android:dependency="switch"
+            android:title="Pobierz lokalizację"
+            android:summary="Naciśnij, by pobrać lokalizację"/>
 
     </android.support.v7.preference.PreferenceCategory>
 

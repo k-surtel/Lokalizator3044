@@ -50,34 +50,6 @@ public class SettingsActivity extends AppCompatActivity
 
 
 
-
-//        //(☞ ͡° ͜ʖ ͡°)☞ LISTY ROZWIJANE - SPINNER
-//        Spinner modeSpinner = (Spinner)findViewById(R.id.edit_mode_spinner);
-//        // Create an ArrayAdapter using the string array and a default spinner layout
-//        ArrayAdapter<CharSequence> modeAdapter = ArrayAdapter.createFromResource(this,
-//                R.array.mode_array, android.R.layout.simple_spinner_item);
-//        // Specify the layout to use when the list of choices appears
-//        modeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-//        // Apply the adapter to the spinner
-//        modeSpinner.setAdapter(modeAdapter);
-//
-//        Spinner ringtoneSpinner = (Spinner)findViewById(R.id.edit_ringtone_spinner);
-//        ArrayAdapter<CharSequence> ringtoneAdapter = ArrayAdapter.createFromResource(this,
-//                R.array.ringtones_array, android.R.layout.simple_spinner_item);
-//        ringtoneAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-//        ringtoneSpinner.setAdapter(ringtoneAdapter);
-//
-//        Spinner distanceSpinner = (Spinner)findViewById(R.id.edit_distance_spinner);
-//        ArrayAdapter<CharSequence> distanceAdapter = ArrayAdapter.createFromResource(this,
-//                R.array.distance_array, android.R.layout.simple_spinner_item);
-//        distanceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-//        distanceSpinner.setAdapter(distanceAdapter);
-//
-//        Spinner buttonSpinner = (Spinner)findViewById(R.id.edit_button_spinner);
-//        ArrayAdapter<CharSequence> buttonAdapter = ArrayAdapter.createFromResource(this,
-//                R.array.click_array, android.R.layout.simple_spinner_item);
-//        buttonAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-//        buttonSpinner.setAdapter(buttonAdapter);
     }
 
     //(☞ ͡° ͜ʖ ͡°)☞ CHOWAJKA WYSUWANEGO PANELU

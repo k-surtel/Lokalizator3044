@@ -1,6 +1,5 @@
 package com.example.k.lokalizator3044;
 
-import android.content.ContentValues;
 import android.content.Intent;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -9,8 +8,9 @@ import android.support.v7.preference.EditTextPreference;
 import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
-import android.support.v7.preference.PreferenceScreen;
+import android.text.InputType;
 import android.util.Log;
+import android.widget.TextView;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -23,6 +23,7 @@ public class ItagSettingFragment extends PreferenceFragmentCompat {
     String address;
     boolean newItag;
     EditTextPreference itagName;
+    EditTextPreference itagDistance;
     Preference ringtonePreference;
 
     private static final int RINGTONE_REQUEST = 1;
@@ -75,7 +76,6 @@ public class ItagSettingFragment extends PreferenceFragmentCompat {
         });
 
 
-        //TODO: yyyyyyyyyyyyyyyyyyyyyyy
         ringtonePreference = findPreference("ringtone_preference");
         if(!newItag) ringtonePreference.setSummary(((AddingActivity)getActivity()).ringtone);
         ringtonePreference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
@@ -94,14 +94,26 @@ public class ItagSettingFragment extends PreferenceFragmentCompat {
             }
         });
 
-        ListPreference itagDistance = (ListPreference)findPreference("itag_distance");
-        if(!newItag) itagDistance.setValue(((AddingActivity)getActivity()).distance);
-        else ((AddingActivity)getActivity()).distance = itagDistance.getValue();
+
+        itagDistance = (EditTextPreference)findPreference("itag_distance");
+        if(!newItag) {
+            itagDistance.setText(((AddingActivity)getActivity()).distance);
+            itagDistance.setSummary(((AddingActivity)getActivity()).distance);
+        } else {
+            itagDistance.setText("");
+            itagDistance.setSummary("Podaj odległość od urządzenia, po której dostaniesz powiadomienie");
+        }
         itagDistance.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
             @Override
             public boolean onPreferenceChange(Preference preference, Object newValue) {
                 ((AddingActivity)getActivity()).distance = newValue.toString();
-                return true;
+                if(newValue != null && !newValue.equals("")) {
+                    preference.setSummary(newValue.toString());
+                    return true;
+                } else {
+                    preference.setSummary("Podaj odległość od urządzenia, po której dostaniesz powiadomienie");
+                    return true;
+                }
             }
         });
 
@@ -116,16 +128,7 @@ public class ItagSettingFragment extends PreferenceFragmentCompat {
             }
         });
 
-        ListPreference itagDoubleClick = (ListPreference)findPreference("itag_double_click");
-        if(!newItag) itagDoubleClick.setValue(((AddingActivity)getActivity()).doubleClick);
-        else ((AddingActivity)getActivity()).doubleClick = itagDoubleClick.getValue();
-        itagDoubleClick.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                ((AddingActivity)getActivity()).doubleClick = newValue.toString();
-                return true;
-            }
-        });
+
     }
 
     @Override

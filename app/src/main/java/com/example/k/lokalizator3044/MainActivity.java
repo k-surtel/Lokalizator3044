@@ -17,25 +17,32 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.CursorLoader;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.Loader;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.location.LocationManager;
 import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.NotificationCompat;
+import android.support.v7.preference.PreferenceManager;
 import android.util.Log;
 import android.view.ActionMode;
 import android.view.MenuInflater;
@@ -50,7 +57,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
-import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
@@ -60,10 +66,10 @@ import android.widget.Toast;
 import com.example.k.lokalizator3044.DatabaseManagement.DBHelper;
 import com.example.k.lokalizator3044.DatabaseManagement.MyContentProvider;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity
@@ -81,7 +87,7 @@ public class MainActivity extends AppCompatActivity
     HashMap<String, BluetoothDevice> myDevices = new HashMap<>();
     HashMap<String, BluetoothGatt> myGatts = new HashMap<>();
 
-    /** MESS */
+
     ListView itagList;
     AlertDialog.Builder builder;
     BluetoothGatt bluetoothGatt;
@@ -103,11 +109,16 @@ public class MainActivity extends AppCompatActivity
     FloatingActionButton fab;
     String curRingtone;
     NotificationCompat.Builder mBuilder;
+    NotificationCompat.Builder mBuilder2;
     NotificationManager mNotifyMgr;
+    ScanSettings settings = new ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
+            .build();
 
     //finding device
     String switchDeviceAddress;
     boolean switchNewDevice;
+    Vibrator v;
 
     /** STATIC VALUES */
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 1;
@@ -160,6 +171,7 @@ public class MainActivity extends AppCompatActivity
         if (!isBluetoothEnable()) requestBluetoothEnable();
         requestLocationPermission();
 
+
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -180,6 +192,11 @@ public class MainActivity extends AppCompatActivity
 
         itagList = findViewById(R.id.itag_list);
         wypelnijListe();
+
+
+        GPSTracker gps = new GPSTracker(this);
+
+
 
         itagList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
@@ -305,13 +322,6 @@ public class MainActivity extends AppCompatActivity
             public void onDestroyActionMode(ActionMode mode) {}
         });
 
-//        Intent intent = new Intent(this, MainActivity.class);
-//        intent.setAction(Intent.ACTION_MAIN);
-//        intent.addCategory(Intent.CATEGORY_LAUNCHER);
-//
-//        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
-//                intent, 0);
-
         Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
                 .setComponent(getPackageManager().getLaunchIntentForPackage(getPackageName()).getComponent());
 
@@ -325,6 +335,30 @@ public class MainActivity extends AppCompatActivity
         mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
     }
 
+
+
+
+    public void checkRange() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        final Handler h = new Handler();
+        final int d = Integer.parseInt(prefs.getString("itag_interval", "15")) * 1000;
+
+
+        Log.d("LOKLIZATOR", "Pref time = "+d);
+
+        h.postDelayed(new Runnable(){
+            public void run(){
+
+                Set<String> keys = myGatts.keySet();
+                for(String k : keys){
+                    myGatts.get(k).readRemoteRssi();
+                }
+
+                h.postDelayed(this, d);
+            }
+        }, d);
+    }
 
     //TODO: ZROBIĆ TO NA BLE NIE ZWYŁYM BT [https://www.bignerdranch.com/blog/bluetooth-low-energy-part-1/]
     public void checkBleSupport() {
@@ -452,7 +486,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        String[] projekcja = {DBHelper.ID, DBHelper.ADDRESS, DBHelper.NAME, DBHelper.WORKING_MODE, DBHelper.RINGTONE, DBHelper.DISTANCE, DBHelper.CLICK, DBHelper.DOUBLE_CLICK};
+        String[] projekcja = {DBHelper.ID, DBHelper.ADDRESS, DBHelper.NAME, DBHelper.WORKING_MODE, DBHelper.RINGTONE, DBHelper.DISTANCE, DBHelper.CLICK, DBHelper.INTERVAL};
         CursorLoader loaderKursora = new CursorLoader(this, MyContentProvider.URI_ZAWARTOSCI, projekcja, null, null, null);
         return loaderKursora;
     }
@@ -564,7 +598,7 @@ public class MainActivity extends AppCompatActivity
                 @Override
                 public void run() {
                     mHandler.removeCallbacks(this);
-                    mBluetoothScanner.startScan(scanCallback);
+                    mBluetoothScanner.startScan(null, settings, scanCallback);
                 }
             });
             mHandler.postDelayed(new Runnable() {
@@ -612,6 +646,7 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         }
+
     };
 
 
@@ -690,7 +725,10 @@ public class MainActivity extends AppCompatActivity
         Log.d("MainActivity", "connectToDeviceSelected()");
         bluetoothGatt = bd.connectGatt(this, false, gattCallback);
 
-        if(myGatts.isEmpty()) mNotifyMgr.notify(0, mBuilder.build());
+        if(myGatts.isEmpty()) {
+            mNotifyMgr.notify(0, mBuilder.build());
+            checkRange();
+        }
 
         myGatts.put(bd.getAddress(), bluetoothGatt);
         myDevices.put(bd.getAddress(), bd);
@@ -751,13 +789,25 @@ public class MainActivity extends AppCompatActivity
 
             UUID uuid = characteristic.getUuid();
             String address = gatt.getDevice().getAddress();
+            String action;
+
+            Cursor c  = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI, new String[]{DBHelper.RINGTONE, DBHelper.CLICK}, DBHelper.ADDRESS+"='"+address+"'", null,null, null);
+            if(c.moveToFirst()) Log.d("MainActivity", c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
+            Uri sound = Uri.parse(c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
+
+            action = c.getString(c.getColumnIndexOrThrow(DBHelper.CLICK));
+            c.close();
+
+
 
             if (!ringtone) {
                 ringtone = true;
-                startRing(address);
+                if(action.equals("Uruchom alarm")) startRing(address, sound);
+                else startVibrate();
             } else {
                 ringtone = false;
-                stopRing();
+                if(action.equals("Uruchom alarm")) stopRing();
+                else stopVibrate();
             }
         }
 
@@ -847,6 +897,41 @@ public class MainActivity extends AppCompatActivity
                 }
             });
         }
+
+
+
+        @Override
+        public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status){
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+
+                int dist = 0;
+
+                String addr = gatt.getDevice().getAddress();
+                Cursor c  = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI,
+                        new String[]{DBHelper.NAME, DBHelper.DISTANCE, DBHelper.RINGTONE, DBHelper.WORKING_MODE},
+                        DBHelper.ADDRESS+"='"+addr+"'", null,null, null);
+                if(c.moveToFirst()) dist = Integer.parseInt(c.getString(c.getColumnIndexOrThrow(DBHelper.DISTANCE)));
+                Log.d("MainActivity", String.valueOf(dist));
+
+
+
+                Log.d("MainActivity", "BluetoothGatt ReadRssi"+rssi);
+
+                if(Math.abs(rssi) > dist) {
+                    Uri uri = Uri.parse(c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
+
+                    mBuilder2 = new NotificationCompat.Builder(MainActivity.this)
+                            .setSmallIcon(R.drawable.common_ic_googleplayservices)
+                            .setContentTitle("Lokalizator 3044")
+                            .setContentText("Urządzenie "+c.getString(c.getColumnIndexOrThrow(DBHelper.NAME))+" jest poza zasięgiem!");
+
+                    if(c.getString(c.getColumnIndexOrThrow(DBHelper.WORKING_MODE)).equals("Tryb głośny"))
+                        mBuilder2.setSound(uri);
+                    mNotifyMgr.notify(1, mBuilder2.build());
+                }
+                c.close();
+            }
+        }
     };
 
     public int convertByteToInt(byte[] b)
@@ -861,18 +946,12 @@ public class MainActivity extends AppCompatActivity
         System.out.println(characteristic.getUuid());
     }
 
-    private void startRing(String addr) {
+    private void startRing(String addr, Uri sound) {
         Log.d("sylwka", "startRing()");
         if (currentRingtone != null) {
             currentRingtone.stop();
             currentRingtone = null;
         }
-
-
-        Cursor c  = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI, new String[]{DBHelper.RINGTONE}, DBHelper.ADDRESS+"='"+addr+"'", null,null, null);
-        if(c.moveToFirst()) Log.d("MainActivity", c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
-        Uri sound = Uri.parse(c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
-        c.close();
 
         //Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
         currentRingtone = RingtoneManager.getRingtone(this, sound);
@@ -894,5 +973,17 @@ public class MainActivity extends AppCompatActivity
         if (currentRingtone != null) {
             currentRingtone.stop();
         }
+    }
+
+    private void startVibrate() {
+        v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
+
+        long pattern[] = {50,100,100,250,150,350};
+        v.vibrate(pattern,3);
+    }
+
+    private void stopVibrate() {
+        v.cancel();
     }
 }

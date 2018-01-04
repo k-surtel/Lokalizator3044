@@ -10,18 +10,24 @@
         <item>Histeryczny śmiech</item>
     </string-array>
 
-    <string-array name="distance_array">
-        <item>500 km</item>
-        <item>20 000 mil</item>
-    </string-array>
-
     <string-array name="click_array">
-        <item>Zrób zdjęcie</item>
-        <item>Odpal rakietę</item>
+        <item>Uruchom alarm</item>
+        <item>Uruchom wibracje</item>
     </string-array>
 
-    <string-array name="double_click_array">
-        <item>Zrób zdjęcie</item>
-        <item>Zablokuj telefon</item>
+    <string-array name="time_interval_array">
+        <item>5 sekund</item>
+        <item>10 sekund</item>
+        <item>15 sekund</item>
+        <item>20 sekund</item>
+        <item>30 sekund</item>
+    </string-array>
+
+    <string-array name="time_interval_array_values">
+        <item>5</item>
+        <item>10</item>
+        <item>15</item>
+        <item>20</item>
+        <item>30</item>
     </string-array>
 </resources>
