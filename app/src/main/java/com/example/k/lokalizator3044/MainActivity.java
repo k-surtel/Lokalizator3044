@@ -3,6 +3,8 @@ package com.example.k.lokalizator3044;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.app.LoaderManager;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -15,23 +17,34 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.CursorLoader;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.Loader;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.location.Location;
+import android.location.LocationManager;
 import android.media.AudioManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Parcelable;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.NotificationCompat;
+import android.support.v7.preference.PreferenceManager;
 import android.util.Log;
 import android.view.ActionMode;
 import android.view.MenuInflater;
@@ -46,7 +59,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
-import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
@@ -59,6 +71,7 @@ import com.example.k.lokalizator3044.DatabaseManagement.MyContentProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity
@@ -76,7 +89,7 @@ public class MainActivity extends AppCompatActivity
     HashMap<String, BluetoothDevice> myDevices = new HashMap<>();
     HashMap<String, BluetoothGatt> myGatts = new HashMap<>();
 
-    /** MESS */
+
     ListView itagList;
     AlertDialog.Builder builder;
     BluetoothGatt bluetoothGatt;
@@ -96,10 +109,21 @@ public class MainActivity extends AppCompatActivity
     public static String ITAG_ACTIVITY = "itag activity";
     boolean scanningActive;
     FloatingActionButton fab;
+    String curRingtone;
+    NotificationCompat.Builder mBuilder;
+    NotificationCompat.Builder mBuilder2;
+    NotificationManager mNotifyMgr;
+    ScanSettings settings = new ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
+            .build();
 
     //finding device
     String switchDeviceAddress;
     boolean switchNewDevice;
+    Vibrator v;
+    boolean trybCichy = false;
+    SharedPreferences prefs;
+    GPSTracker gps = new GPSTracker(this);
 
     /** STATIC VALUES */
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 1;
@@ -134,6 +158,10 @@ public class MainActivity extends AppCompatActivity
     public static final String SERVICE_BATTERY_SERVICE = "0000180F-0000-1000-8000-00805f9b34fb";
     public static final String CHAR_BATTERY_LEVEL = "00002a19-0000-1000-8000-00805f9b34fb";
 
+    public void setTryb(boolean b){
+        trybCichy = b;
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -151,6 +179,7 @@ public class MainActivity extends AppCompatActivity
         checkBleSupport();
         if (!isBluetoothEnable()) requestBluetoothEnable();
         requestLocationPermission();
+
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -172,6 +201,11 @@ public class MainActivity extends AppCompatActivity
 
         itagList = findViewById(R.id.itag_list);
         wypelnijListe();
+
+
+        GPSTracker gps = new GPSTracker(this);
+
+
 
         itagList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
@@ -223,6 +257,7 @@ public class MainActivity extends AppCompatActivity
                 alarmButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+
                         final String addr = address;
 
 
@@ -236,7 +271,7 @@ public class MainActivity extends AppCompatActivity
                             }
                         } else if (myDevices.get(addr) != null && myGatts.get(addr) != null && alert) {
                             BluetoothGatt gatt = myGatts.get(addr);
-                            bc = findCharacteristic(addr, CHAR_MANUFACTURER_NAME_STRING);
+                            bc = findCharacteristic(addr, CHAR_ALERT_LEVEL_UUID);
                             if (bc != null) {
                                 bc.setValue(new byte[]{(byte) 0x00});
                                 alert = false;
@@ -295,14 +330,44 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onDestroyActionMode(ActionMode mode) {}
         });
+
+        Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+                .setComponent(getPackageManager().getLaunchIntentForPackage(getPackageName()).getComponent());
+
+        mBuilder = new NotificationCompat.Builder(this)
+                        .setSmallIcon(R.drawable.common_ic_googleplayservices)
+                        .setContentTitle("Lokalizator 3044")
+                        .setContentText("Aplikacja jest połączona do iTagów!")
+                        .setOngoing(true)
+                        .setContentIntent(PendingIntent.getActivity(this, 0, intent, 0));
+
+        mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
 
+
+
+    public void checkRange() {
+        prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        final Handler h = new Handler();
+        final int d = Integer.parseInt(prefs.getString("itag_interval", "15")) * 1000;
+
+
+        Log.d("LOKLIZATOR", "Pref time = "+d);
+
+        h.postDelayed(new Runnable(){
+            public void run(){
+
+                Set<String> keys = myGatts.keySet();
+                for(String k : keys){
+                    myGatts.get(k).readRemoteRssi();
+                }
+
+                h.postDelayed(this, d);
+            }
+        }, d);
     }
-
 
     //TODO: ZROBIĆ TO NA BLE NIE ZWYŁYM BT [https://www.bignerdranch.com/blog/bluetooth-low-energy-part-1/]
     public void checkBleSupport() {
@@ -418,19 +483,19 @@ public class MainActivity extends AppCompatActivity
             // Make sure the request was successful
             if (resultCode == RESULT_OK) {
                 addingMayFail = false;
+
             } else if (resultCode == RESULT_CANCELED) {
-                if(data.getExtras() != null) {
-                    Log.d("MainAcitvity", "addingactivity - result cancel");
-                    disconnectDeviceSelected(data.getExtras().getString("a"));
                     addingMayFail = false;
+                if(data.getExtras() != null)
+                    disconnectDeviceSelected(data.getExtras().getString("a"));
                 }
             }
         }
-    }
+
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        String[] projekcja = {DBHelper.ID, DBHelper.ADDRESS, DBHelper.NAME, DBHelper.WORKING_MODE, DBHelper.RINGTONE, DBHelper.DISTANCE, DBHelper.CLICK, DBHelper.DOUBLE_CLICK};
+        String[] projekcja = {DBHelper.ID, DBHelper.ADDRESS, DBHelper.NAME, DBHelper.WORKING_MODE, DBHelper.RINGTONE, DBHelper.DISTANCE, DBHelper.CLICK};
         CursorLoader loaderKursora = new CursorLoader(this, MyContentProvider.URI_ZAWARTOSCI, projekcja, null, null, null);
         return loaderKursora;
     }
@@ -542,7 +607,7 @@ public class MainActivity extends AppCompatActivity
                 @Override
                 public void run() {
                     mHandler.removeCallbacks(this);
-                    mBluetoothScanner.startScan(scanCallback);
+                    mBluetoothScanner.startScan(null, settings, scanCallback);
                 }
             });
             mHandler.postDelayed(new Runnable() {
@@ -590,6 +655,7 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         }
+
     };
 
 
@@ -624,6 +690,7 @@ public class MainActivity extends AppCompatActivity
                     myDevices.put(scannedDevices.get(which).getAddress(), scannedDevices.get(which));
 
                     Log.d("MainAcitvity", "connect - new itag from list");
+
                     connectToDeviceSelected(scannedDevices.get(which));
                 }
             });
@@ -663,22 +730,30 @@ public class MainActivity extends AppCompatActivity
     }
 
 
+
     //(☞ ͡° ͜ʖ ͡°)☞ POŁĄCZENIE DO URZĄDZENIA
     public void connectToDeviceSelected(BluetoothDevice bd) {
         Log.d("MainActivity", "connectToDeviceSelected()");
         bluetoothGatt = bd.connectGatt(this, false, gattCallback);
 
+        if(myGatts.isEmpty()) {
+            mNotifyMgr.notify(0, mBuilder.build());
+            checkRange();
+
+            if (switchNewDevice) {
+                myDevices.put(bd.getAddress(), bd);
+
+                Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
+                intent.putExtra(ITAG_ACTIVITY, bd.getAddress());
+                intent.putExtra(NEW_ITAG_ACTIVITY, switchNewDevice);
+                startActivityForResult(intent, 1);
+            }
+        }
+
         myGatts.put(bd.getAddress(), bluetoothGatt);
         myDevices.put(bd.getAddress(), bd);
         Toast.makeText(MainActivity.this, "Połączono do " + bd.getAddress(), Toast.LENGTH_SHORT).show();
         linlaHeaderProgress.setVisibility(View.GONE);
-
-        if (switchNewDevice) {
-            Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
-            intent.putExtra(ITAG_ACTIVITY, bd.getAddress());
-            intent.putExtra(NEW_ITAG_ACTIVITY, switchNewDevice);
-            startActivityForResult(intent, 1);
-        }
     }
 
     public void disconnectDeviceSelected(String address) {
@@ -692,6 +767,7 @@ public class MainActivity extends AppCompatActivity
             if(!addingMayFail) {
                 if(pressedSwitch.isChecked()) pressedSwitch.setChecked(false);
             }
+            if(myGatts.isEmpty()) mNotifyMgr.cancel(0);
         }
     }
 
@@ -726,13 +802,25 @@ public class MainActivity extends AppCompatActivity
 
             UUID uuid = characteristic.getUuid();
             String address = gatt.getDevice().getAddress();
+            String action;
+
+            Cursor c  = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI, new String[]{DBHelper.RINGTONE, DBHelper.CLICK}, DBHelper.ADDRESS+"='"+address+"'", null,null, null);
+            if(c.moveToFirst()) Log.d("MainActivity", c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
+            Uri sound = Uri.parse(c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
+
+            action = c.getString(c.getColumnIndexOrThrow(DBHelper.CLICK));
+            c.close();
+
+
 
             if (!ringtone) {
                 ringtone = true;
-                startRing(address);
+                if(action.equals("Uruchom alarm")) startRing(address, sound);
+                else startVibrate();
             } else {
                 ringtone = false;
-                stopRing();
+                if(action.equals("Uruchom alarm")) stopRing();
+                else stopVibrate();
             }
         }
 
@@ -788,43 +876,6 @@ public class MainActivity extends AppCompatActivity
 
                     }
                 }
-
-
-                for (BluetoothGattService service : gatt.getServices()) {
-                    if ((service == null) || (service.getUuid() == null)) {
-                        continue;
-                    }
-                    if (SERVICE_DEVICE_INFORMATION.equalsIgnoreCase(service.getUuid().toString())) {
-                        //mReadManufacturerNameButton.setTag(service.getCharacteristic(UUID.fromString(BleUuid.CHAR_MANUFACTURER_NAME_STRING)));
-                        //mReadSerialNumberButton.setTag(service.getCharacteristic(UUID.fromString(BleUuid.CHAR_SERIAL_NUMBEAR_STRING)));
-                        Log.d("MainActivity", "UDAŁO SIĘ ODCZYTAĆ CHYYYYYYYYYYYBA");
-                        devinfo = true;
-                        /*runOnUiThread(new Runnable() {
-                            public void run() {
-                               // mReadManufacturerNameButton.setEnabled(true);
-                               // mReadSerialNumberButton.setEnabled(true);
-                            };
-                        });*/
-                    }
-                    if (SERVICE_IMMEDIATE_ALERT.equalsIgnoreCase(service.getUuid().toString())) {
-                        /*runOnUiThread(new Runnable() {
-                            public void run() {
-                                //mWriteAlertLevelButton.setEnabled(true);
-                            }
-                        });*/
-                        //mWriteAlertLevelButton.setTag(service.getCharacteristic(UUID.fromString(BleUuid.CHAR_ALERT_LEVEL)));
-                    }
-                }
-
-                /*runOnUiThread(new Runnable() {
-                                  public void run() {
-                                      setProgressBarIndeterminateVisibility(false);
-                                  }
-
-
-                              });*/
-
-                displayGattServices(bluetoothGatt.getServices());
             } else {
                 // failure
             }
@@ -859,6 +910,51 @@ public class MainActivity extends AppCompatActivity
                 }
             });
         }
+
+
+
+
+
+        @Override
+        public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status){
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+
+                int dist = 0;
+
+                String addr = gatt.getDevice().getAddress();
+                Cursor c  = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI,
+                        new String[]{DBHelper.NAME, DBHelper.DISTANCE, DBHelper.RINGTONE, DBHelper.WORKING_MODE},
+                        DBHelper.ADDRESS+"='"+addr+"'", null,null, null);
+                if(c.moveToFirst()) dist = Integer.parseInt(c.getString(c.getColumnIndexOrThrow(DBHelper.DISTANCE)));
+                Log.d("MainActivity", String.valueOf(dist));
+
+                prefs = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+                trybCichy = prefs.getBoolean("switch", false);
+                if(trybCichy) trybCichy = prefs.getBoolean("tryb_cichy", false);
+
+                Log.d("MainActivity", "SWITCHH "+trybCichy);
+
+
+
+                Log.d("MainActivity", "BluetoothGatt ReadRssi"+rssi);
+
+                if(Math.abs(rssi) > dist) {
+                    Uri uri = Uri.parse(c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
+
+                    mBuilder2 = new NotificationCompat.Builder(MainActivity.this)
+                            .setSmallIcon(R.drawable.common_ic_googleplayservices)
+                            .setContentTitle("Lokalizator 3044")
+                            .setContentText("Urządzenie "+c.getString(c.getColumnIndexOrThrow(DBHelper.NAME))+" jest poza zasięgiem!");
+
+                    if(trybCichy) Toast.makeText(MainActivity.this, "tryb cichy", Toast.LENGTH_LONG).show();
+
+                    if(c.getString(c.getColumnIndexOrThrow(DBHelper.WORKING_MODE)).equals("Tryb głośny"))
+                        mBuilder2.setSound(uri);
+                    mNotifyMgr.notify(1, mBuilder2.build());
+                }
+                c.close();
+            }
+        }
     };
 
     public int convertByteToInt(byte[] b)
@@ -869,41 +965,18 @@ public class MainActivity extends AppCompatActivity
         return value;
     }
 
-    private void displayGattServices(List<BluetoothGattService> gattServices) {
-        if (gattServices == null) return;
-
-        for (BluetoothGattService gattService : gattServices) {
-            final String uuid = gattService.getUuid().toString();
-            Log.d("SERVICES", "Service disovered: " + uuid);
-
-            //new ArrayList<HashMap<String, String>>();
-            List<BluetoothGattCharacteristic> gattCharacteristics = gattService.getCharacteristics();
-            for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
-                final String charUuid = gattCharacteristic.getUuid().toString();
-                Log.d("CHARACTERISTICS", "Characteristic discovered for service: " + charUuid);
-
-                List<BluetoothGattDescriptor> gattDescriptors = gattCharacteristic.getDescriptors();
-                for (BluetoothGattDescriptor gattDescriptor : gattDescriptors) {
-                    final String descUuid = gattDescriptor.getUuid().toString();
-                    Log.d("DESCRIPTORS", "Descriptor discovered for characteristic: " + descUuid);
-                }
-            }
-        }
-    }
-
     private void broadcastUpdate(final String action, final BluetoothGattCharacteristic characteristic) {
         System.out.println(characteristic.getUuid());
     }
 
-
-    private void startRing(String addr) {
+    private void startRing(String addr, Uri sound) {
         Log.d("sylwka", "startRing()");
         if (currentRingtone != null) {
             currentRingtone.stop();
             currentRingtone = null;
         }
-        final String address = addr;
-        Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+
+        //Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
         currentRingtone = RingtoneManager.getRingtone(this, sound);
 
         if (currentRingtone == null) {
@@ -923,5 +996,17 @@ public class MainActivity extends AppCompatActivity
         if (currentRingtone != null) {
             currentRingtone.stop();
         }
+    }
+
+    private void startVibrate() {
+        v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
+
+        long pattern[] = {50,100,100,250,150,350};
+        v.vibrate(pattern,3);
+    }
+
+    private void stopVibrate() {
+        v.cancel();
     }
 }

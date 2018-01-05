@@ -31,14 +31,14 @@
         android:ringtoneType="notification"
         android:title="Dźwięk dzwonka" />
 
-    <ListPreference
-        android:entries="@array/distance_array"
-        android:entryValues="@array/distance_array"
+
+    <EditTextPreference
+        android:inputType="number"
         android:key="itag_distance"
-        android:negativeButtonText="@null"
-        android:positiveButtonText="@null"
-        android:title="Odległość od urządzenia"
-        android:summary="%s"/>
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="Sygnał RSSI" />
 
     <ListPreference
         android:entries="@array/click_array"
@@ -49,13 +49,5 @@
         android:title="Akcja przycisku"
         android:summary="%s"/>
 
-    <ListPreference
-        android:entries="@array/double_click_array"
-        android:entryValues="@array/double_click_array"
-        android:key="itag_double_click"
-        android:negativeButtonText="@null"
-        android:positiveButtonText="@null"
-        android:title="Akcja podwójnego użycia przycisku"
-        android:summary="%s"/>
 
 </PreferenceScreen>
