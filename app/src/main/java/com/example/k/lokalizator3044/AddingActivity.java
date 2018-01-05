@@ -45,7 +45,7 @@ public class AddingActivity extends AppCompatActivity {
 
         if (!newItag) {
             Cursor cursor = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI, null, null, null, null);
-            if (cursor.moveToFirst()) {
+            if (cursor.getCount() > 0 && cursor.moveToFirst()) {
                 do {
                     if (deviceAddress.equals(cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS)))) {
                         id = cursor.getInt(cursor.getColumnIndex(DBHelper.ID));
