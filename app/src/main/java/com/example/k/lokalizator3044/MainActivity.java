@@ -335,7 +335,7 @@ public class MainActivity extends AppCompatActivity
                 .setComponent(getPackageManager().getLaunchIntentForPackage(getPackageName()).getComponent());
 
         mBuilder = new NotificationCompat.Builder(this)
-                        .setSmallIcon(R.drawable.common_ic_googleplayservices)
+                        .setSmallIcon(R.mipmap.ic_launcher)
                         .setContentTitle("Lokalizator 3044")
                         .setContentText("Aplikacja jest połączona do iTagów!")
                         .setOngoing(true)
@@ -721,10 +721,9 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void addNewDevice() {
-        //TODO: TYLE WYSTARCZY?
         addingMayFail = true;
+        switchNewDevice = true;
         if (isBluetoothEnable()) {
-            switchNewDevice = true;
             startScan();
         } else requestBluetoothEnable();
     }
@@ -733,14 +732,17 @@ public class MainActivity extends AppCompatActivity
 
     //(☞ ͡° ͜ʖ ͡°)☞ POŁĄCZENIE DO URZĄDZENIA
     public void connectToDeviceSelected(BluetoothDevice bd) {
-        Log.d("MainActivity", "connectToDeviceSelected()");
+        Log.e("MainActivity", "connectToDeviceSelected()");
         bluetoothGatt = bd.connectGatt(this, false, gattCallback);
 
         if(myGatts.isEmpty()) {
+            Log.e("MainActivity", "myGatts jest empty");
             mNotifyMgr.notify(0, mBuilder.build());
             checkRange();
+        }
 
             if (switchNewDevice) {
+                Log.e("MainActivity", "switchNewDevice = true");
                 myDevices.put(bd.getAddress(), bd);
 
                 Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
@@ -748,7 +750,7 @@ public class MainActivity extends AppCompatActivity
                 intent.putExtra(NEW_ITAG_ACTIVITY, switchNewDevice);
                 startActivityForResult(intent, 1);
             }
-        }
+
 
         myGatts.put(bd.getAddress(), bluetoothGatt);
         myDevices.put(bd.getAddress(), bd);
@@ -920,12 +922,21 @@ public class MainActivity extends AppCompatActivity
             if (status == BluetoothGatt.GATT_SUCCESS) {
 
                 int dist = 0;
-
                 String addr = gatt.getDevice().getAddress();
+                Uri uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+                String tryb = "";
                 Cursor c  = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI,
                         new String[]{DBHelper.NAME, DBHelper.DISTANCE, DBHelper.RINGTONE, DBHelper.WORKING_MODE},
                         DBHelper.ADDRESS+"='"+addr+"'", null,null, null);
-                if(c.moveToFirst()) dist = Integer.parseInt(c.getString(c.getColumnIndexOrThrow(DBHelper.DISTANCE)));
+                if(c.getCount() == 0) {
+                    c.close();
+                    return;
+                }
+                if(c.moveToFirst()) {
+                    dist = Integer.parseInt(c.getString(c.getColumnIndexOrThrow(DBHelper.DISTANCE)));
+                    uri = Uri.parse(c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
+                    tryb = c.getString(c.getColumnIndexOrThrow(DBHelper.WORKING_MODE));
+                }
                 Log.d("MainActivity", String.valueOf(dist));
 
                 prefs = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
@@ -939,16 +950,15 @@ public class MainActivity extends AppCompatActivity
                 Log.d("MainActivity", "BluetoothGatt ReadRssi"+rssi);
 
                 if(Math.abs(rssi) > dist) {
-                    Uri uri = Uri.parse(c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
 
                     mBuilder2 = new NotificationCompat.Builder(MainActivity.this)
-                            .setSmallIcon(R.drawable.common_ic_googleplayservices)
+                            .setSmallIcon(R.mipmap.ic_launcher)
                             .setContentTitle("Lokalizator 3044")
                             .setContentText("Urządzenie "+c.getString(c.getColumnIndexOrThrow(DBHelper.NAME))+" jest poza zasięgiem!");
 
                     if(trybCichy) Toast.makeText(MainActivity.this, "tryb cichy", Toast.LENGTH_LONG).show();
 
-                    if(c.getString(c.getColumnIndexOrThrow(DBHelper.WORKING_MODE)).equals("Tryb głośny"))
+                    if(tryb.equals("Tryb głośny"))
                         mBuilder2.setSound(uri);
                     mNotifyMgr.notify(1, mBuilder2.build());
                 }

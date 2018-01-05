@@ -14,7 +14,7 @@
             android:title="@string/men_settings" />
         <item
             android:id="@+id/nav_about"
-            android:icon="@android:drawable/ic_menu_info_details"
+            android:icon="@drawable/ic_info_outline"
             android:title="@string/men_about" />
     </group>
 
