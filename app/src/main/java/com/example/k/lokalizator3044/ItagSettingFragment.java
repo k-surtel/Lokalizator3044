@@ -53,14 +53,9 @@ public class ItagSettingFragment extends PreferenceFragmentCompat {
             @Override
             public boolean onPreferenceChange(Preference preference, Object newValue) {
                 ((AddingActivity)getActivity()).name = newValue.toString();
-                if(newValue != null && !newValue.equals("")) {
-                    preference.setSummary(newValue.toString());
-                    return true;
-                } else {
-                    preference.setSummary("Wpisz nazwę urządzenia");
-                    return true;
-                }
-
+                if(!newValue.equals("")) preference.setSummary(newValue.toString());
+                else preference.setSummary("Wpisz nazwę urządzenia");
+                return true;
             }
         });
 
@@ -84,11 +79,10 @@ public class ItagSettingFragment extends PreferenceFragmentCompat {
                 Intent intent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
                 intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM);
                 intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Select Ringtone");
-                if (((AddingActivity)getActivity()).ringtone != null) {
+                if (((AddingActivity)getActivity()).ringtone != null)
                     intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, Uri.parse(((AddingActivity)getActivity()).ringtone));
-                } else {
-                    intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, (Uri) null);
-                }
+                else intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, (Uri) null);
+
                 startActivityForResult(intent, RINGTONE_REQUEST);
                 return true;
             }

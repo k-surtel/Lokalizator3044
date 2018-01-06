@@ -1,6 +1,5 @@
 package com.example.k.lokalizator3044;
 
-import android.app.Fragment;
 import android.content.Intent;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -88,9 +87,7 @@ public class AboutActivity extends AppCompatActivity
         } else if (id == R.id.nav_settings) {
             Intent intent = new Intent(this, SettingsActivity.class);
             startActivity(intent);
-        } else if (id == R.id.nav_about) {
-
-        }
+        } else if (id == R.id.nav_about) {}
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);

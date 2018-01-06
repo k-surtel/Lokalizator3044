@@ -18,7 +18,6 @@ public class DBHelper extends SQLiteOpenHelper {
     public final static String DISTANCE = "distance";
     public final static String CLICK = "click";
 
-    //ifen
     public final static String CREATE_BASE = "CREATE TABLE "+ TABLE_NAME +"("+ID+" integer primary key autoincrement, "+ ADDRESS +" text not null, "+ NAME +" text not null, "+ WORKING_MODE +" text not null, "+ RINGTONE +" text not null, "+ DISTANCE +" text not null, "+ CLICK +" text not null);";
     private static final String DELETE_BASE = "DROP TABLE IF EXISTS "+ TABLE_NAME;
 

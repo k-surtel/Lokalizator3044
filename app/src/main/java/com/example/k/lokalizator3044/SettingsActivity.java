@@ -1,9 +1,6 @@
 package com.example.k.lokalizator3044;
 
-import android.app.Fragment;
 import android.content.Intent;
-import android.preference.PreferenceActivity;
-import android.preference.PreferenceFragment;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -14,16 +11,12 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.Spinner;
-
-import java.util.ArrayList;
 
 
 public class SettingsActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
-    GPSTracker gps;
+    //GPSTracker gps;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
