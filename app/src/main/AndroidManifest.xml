@@ -52,7 +52,7 @@
             android:authorities="com.example.k.lokalizator3044"
             android:enabled="true"
             android:exported="true"
-            android:grantUriPermissions="true"></provider>
+            android:grantUriPermissions="true"/>
 
     </application>
 
