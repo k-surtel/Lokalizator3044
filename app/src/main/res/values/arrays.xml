@@ -5,11 +5,6 @@
         <item>Tryb głośny</item>
     </string-array>
 
-    <string-array name="ringtones_array">
-        <item>Rechotanie żab</item>
-        <item>Histeryczny śmiech</item>
-    </string-array>
-
     <string-array name="click_array">
         <item>Uruchom alarm</item>
         <item>Uruchom wibracje</item>

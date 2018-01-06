@@ -50,11 +50,6 @@
             android:exported="true"
             android:grantUriPermissions="true"></provider>
 
-        <activity
-            android:name=".ItagActivity"
-            android:configChanges="orientation|screenSize"
-            android:parentActivityName=".MainActivity" />
-
     </application>
 
 </manifest>

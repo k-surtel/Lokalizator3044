@@ -387,16 +387,16 @@ public class MainActivity extends AppCompatActivity
 
 
     private void removeRecords() {
-        long zaznaczone[] = itagList.getCheckedItemIds();
+        long checkedRecords[] = itagList.getCheckedItemIds();
         Cursor cursor;
         String addr = "";
-        for (int i = 0; i < zaznaczone.length; ++i) {
-            cursor = getContentResolver().query(ContentUris.withAppendedId(MyContentProvider.URI_ZAWARTOSCI, zaznaczone[i]), null, null, null, null);
+        for (int i = 0; i < checkedRecords.length; ++i) {
+            cursor = getContentResolver().query(ContentUris.withAppendedId(MyContentProvider.URI_ZAWARTOSCI, checkedRecords[i]), null, null, null, null);
             if (cursor.moveToFirst())
                 addr = cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS));
             if (myGatts.get(addr) != null && !myGatts.get(addr).equals(""))
                 disconnectDeviceSelected(addr);
-            getContentResolver().delete(ContentUris.withAppendedId(MyContentProvider.URI_ZAWARTOSCI, zaznaczone[i]), null, null);
+            getContentResolver().delete(ContentUris.withAppendedId(MyContentProvider.URI_ZAWARTOSCI, checkedRecords[i]), null, null);
         }
     }
 
@@ -421,8 +421,8 @@ public class MainActivity extends AppCompatActivity
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         String[] projekcja = {DBHelper.ID, DBHelper.ADDRESS, DBHelper.NAME, DBHelper.WORKING_MODE, DBHelper.RINGTONE, DBHelper.DISTANCE, DBHelper.CLICK};
-        CursorLoader loaderKursora = new CursorLoader(this, MyContentProvider.URI_ZAWARTOSCI, projekcja, null, null, null);
-        return loaderKursora;
+        CursorLoader cursorLoader = new CursorLoader(this, MyContentProvider.URI_ZAWARTOSCI, projekcja, null, null, null);
+        return cursorLoader;
     }
 
     @Override
@@ -691,12 +691,8 @@ public class MainActivity extends AppCompatActivity
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic) {
             // this will get called anytime you perform a read or write characteristic operation
-
-            Log.d("MainActivity", "onCharacteristicChanged()");
-
             broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
 
-            UUID uuid = characteristic.getUuid();
             String address = gatt.getDevice().getAddress();
             String action;
 
@@ -707,7 +703,6 @@ public class MainActivity extends AppCompatActivity
 
             action = c.getString(c.getColumnIndexOrThrow(DBHelper.CLICK));
             c.close();
-
 
             if (!ringtone) {
                 ringtone = true;
@@ -802,7 +797,7 @@ public class MainActivity extends AppCompatActivity
                 int dist = 0;
                 String addr = gatt.getDevice().getAddress();
                 Uri uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-                String tryb = "";
+                String currentMode = "";
                 Cursor c = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI,
                         new String[]{DBHelper.NAME, DBHelper.DISTANCE, DBHelper.RINGTONE, DBHelper.WORKING_MODE},
                         DBHelper.ADDRESS + "='" + addr + "'", null, null, null);
@@ -813,7 +808,7 @@ public class MainActivity extends AppCompatActivity
                 if (c.moveToFirst()) {
                     dist = Integer.parseInt(c.getString(c.getColumnIndexOrThrow(DBHelper.DISTANCE)));
                     uri = Uri.parse(c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
-                    tryb = c.getString(c.getColumnIndexOrThrow(DBHelper.WORKING_MODE));
+                    currentMode = c.getString(c.getColumnIndexOrThrow(DBHelper.WORKING_MODE));
                 }
 
                 prefs = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
@@ -828,9 +823,9 @@ public class MainActivity extends AppCompatActivity
                             .setContentText("Urządzenie " + c.getString(c.getColumnIndexOrThrow(DBHelper.NAME)) + " jest poza zasięgiem!");
 
                     if (trybCichy)
-                        Toast.makeText(MainActivity.this, "tryb cichy", Toast.LENGTH_LONG).show();
+                        Toast.makeText(MainActivity.this, "currentMode cichy", Toast.LENGTH_LONG).show();
 
-                    if (tryb.equals("Tryb głośny"))
+                    if (currentMode.equals("Tryb głośny"))
                         mBuilder2.setSound(uri);
                     mNotifyMgr.notify(1, mBuilder2.build());
                 }
