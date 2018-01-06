@@ -18,29 +18,22 @@ import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
-import android.content.BroadcastReceiver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.CursorLoader;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.Loader;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.location.Location;
-import android.location.LocationManager;
 import android.media.AudioManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
-import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Parcelable;
-import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.NotificationCompat;
@@ -64,10 +57,8 @@ import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.Switch;
 import android.widget.Toast;
-
 import com.example.k.lokalizator3044.DatabaseManagement.DBHelper;
 import com.example.k.lokalizator3044.DatabaseManagement.MyContentProvider;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -95,10 +86,8 @@ public class MainActivity extends AppCompatActivity
     BluetoothGatt bluetoothGatt;
     BluetoothGattCharacteristic bc;
     boolean addingMayFail;
-    boolean devinfo = false;
     boolean alert = false;
     static Ringtone currentRingtone;
-    private BroadcastReceiver receiver;
     boolean ringtone = false;
     Switch pressedSwitch;
     View itagAddress;
@@ -109,15 +98,10 @@ public class MainActivity extends AppCompatActivity
     public static String ITAG_ACTIVITY = "itag activity";
     boolean scanningActive;
     FloatingActionButton fab;
-    String curRingtone;
     NotificationCompat.Builder mBuilder;
     NotificationCompat.Builder mBuilder2;
     NotificationManager mNotifyMgr;
-    ScanSettings settings = new ScanSettings.Builder()
-            .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
-            .build();
-
-    //finding device
+    ScanSettings settings;
     String switchDeviceAddress;
     boolean switchNewDevice;
     Vibrator v;
@@ -125,61 +109,31 @@ public class MainActivity extends AppCompatActivity
     SharedPreferences prefs;
     GPSTracker gps = new GPSTracker(this);
 
-    /** STATIC VALUES */
-    private static final int PERMISSION_REQUEST_FINE_LOCATION = 1;
+    /**
+     * STATIC VALUES
+     */
     //(☞ ͡° ͜ʖ ͡°)☞ STOPS SCANNING AFTER 5 SECONDS
     private static final long SCAN_PERIOD = 5000;
+    private static final int PERMISSION_REQUEST_FINE_LOCATION = 1;
     private final static int REQUEST_ENABLE_BT = 1;
-
+    public final static String ACTION_DATA_AVAILABLE = "com.example.k.lokalizator3044.ACTION_DATA_AVAILABLE";
     public static final UUID CHAR_BATTERY_LEVEL_UUID = UUID.fromString("00002a19-0000-1000-8000-00805f9b34fb");
-
-    public final static String ACTION_GATT_CONNECTED = "com.example.bluetooth.le.ACTION_GATT_CONNECTED";
-    public final static String ACTION_GATT_DISCONNECTED = "com.example.bluetooth.le.ACTION_GATT_DISCONNECTED";
-    public final static String ACTION_GATT_SERVICES_DISCOVERED = "com.example.bluetooth.le.ACTION_GATT_SERVICES_DISCOVERED";
-    public final static String ACTION_DATA_AVAILABLE = "com.example.bluetooth.le.ACTION_DATA_AVAILABLE";
-    public final static String EXTRA_DATA = "com.example.bluetooth.le.EXTRA_DATA";
-
-    // 180A Device Information
-    public static final UUID SERVICE_DEVICE_INFORMATION_UUID = UUID.fromString("0000180a-0000-1000-8000-00805f9b34fb");
-    public static final String SERVICE_DEVICE_INFORMATION = "0000180a-0000-1000-8000-00805f9b34fb";
-    public static final UUID CHAR_MANUFACTURER_NAME_STRING_UUID = UUID.fromString("00002a29-0000-1000-8000-00805f9b34fb");
-    public static final UUID CHAR_MANUFACTURER_NAME_STRING = UUID.fromString("00002a29-0000-1000-8000-00805f9b34fb");
-    public static final String STRING_CHAR_MANUFACTURER_NAME_STRING = "00002a29-0000-1000-8000-00805f9b34fb";
-    public static final String CHAR_MODEL_NUMBER_STRING = "00002a24-0000-1000-8000-00805f9b34fb";
-    public static final String CHAR_SERIAL_NUMBEAR_STRING = "00002a25-0000-1000-8000-00805f9b34fb";
-
-    // 1802 Immediate Alert
-    public static final String SERVICE_IMMEDIATE_ALERT = "00001802-0000-1000-8000-00805f9b34fb";
     public static final UUID CHAR_ALERT_LEVEL_UUID = UUID.fromString("00002a06-0000-1000-8000-00805f9b34fb");
-    public static final String CHAR_ALERT_LEVEL = "00002a06-0000-1000-8000-00805f9b34fb"; ///
-    // StickNFindではCHAR_ALERT_LEVELに0x01をWriteすると光り、0x02では音が鳴り、0x03では光って鳴る。
-
-    // 180F Battery Service
-    public static final String SERVICE_BATTERY_SERVICE = "0000180F-0000-1000-8000-00805f9b34fb";
-    public static final String CHAR_BATTERY_LEVEL = "00002a19-0000-1000-8000-00805f9b34fb";
-
-    public void setTryb(boolean b){
-        trybCichy = b;
-    }
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        requestBluetoothPermission();
-        requestBluetoothAdminPermission();
-
         mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         mBluetoothScanner = mBluetoothAdapter.getBluetoothLeScanner();
-
 
         checkBleSupport();
         if (!isBluetoothEnable()) requestBluetoothEnable();
         requestLocationPermission();
 
+        settings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_POWER).build();
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -200,12 +154,7 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         itagList = findViewById(R.id.itag_list);
-        wypelnijListe();
-
-
-        GPSTracker gps = new GPSTracker(this);
-
-
+        adaptItagList();
 
         itagList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
@@ -219,29 +168,28 @@ public class MainActivity extends AppCompatActivity
                 // Get the state's capital from this row in the database.
                 final String address = cursor.getString(cursor.getColumnIndexOrThrow(DBHelper.ADDRESS));
 
-                if(itagAddress == view.findViewById(R.id.itag_address)) {
+                if (itagAddress == view.findViewById(R.id.itag_address)) {
                     same = true;
                     sameCount++;
-                }
-                else {
+                } else {
                     same = false;
                     sameCount = 1;
                 }
 
-                if((itagAddress != null && itagAddress.getTag() != null && (boolean)itagAddress.getTag()) || same) {
+                if ((itagAddress != null && itagAddress.getTag() != null && (boolean) itagAddress.getTag()) || same) {
                     itagAddress.setVisibility(View.GONE);
                     itagAddress.setTag(false);
                 }
-                if((alarmButton != null && alarmButton.getTag() != null && (boolean)alarmButton.getTag()) || same) {
+                if ((alarmButton != null && alarmButton.getTag() != null && (boolean) alarmButton.getTag()) || same) {
                     alarmButton.setVisibility(View.GONE);
                     alarmButton.setTag(false);
                 }
-                if((settingsButton != null && settingsButton.getTag() != null && (boolean)settingsButton.getTag()) || same) {
+                if ((settingsButton != null && settingsButton.getTag() != null && (boolean) settingsButton.getTag()) || same) {
                     settingsButton.setVisibility(View.GONE);
                     settingsButton.setTag(false);
                 }
 
-                if(!same || (same && sameCount%2 != 0 && sameCount > 1)) {
+                if (!same || (same && sameCount % 2 != 0 && sameCount > 1)) {
                     itagAddress = view.findViewById(R.id.itag_address);
                     alarmButton = view.findViewById(R.id.itag_alarm);
                     settingsButton = view.findViewById(R.id.itag_settings);
@@ -321,57 +269,48 @@ public class MainActivity extends AppCompatActivity
             public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
                 switch (item.getItemId()) {
                     case R.id.action_delete:
-                        kasujZaznaczone();
+                        removeRecords();
                         return true;
                 }
                 return false;
             }
 
             @Override
-            public void onDestroyActionMode(ActionMode mode) {}
+            public void onDestroyActionMode(ActionMode mode) {
+            }
         });
 
         Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
                 .setComponent(getPackageManager().getLaunchIntentForPackage(getPackageName()).getComponent());
 
         mBuilder = new NotificationCompat.Builder(this)
-                        .setSmallIcon(R.mipmap.ic_launcher)
-                        .setContentTitle("Lokalizator 3044")
-                        .setContentText("Aplikacja jest połączona do iTagów!")
-                        .setOngoing(true)
-                        .setContentIntent(PendingIntent.getActivity(this, 0, intent, 0));
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("Lokalizator 3044")
+                .setContentText("Aplikacja jest połączona do iTagów!")
+                .setOngoing(true)
+                .setContentIntent(PendingIntent.getActivity(this, 0, intent, 0));
 
         mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
     }
 
 
-
-
     public void checkRange() {
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
-
         final Handler h = new Handler();
         final int d = Integer.parseInt(prefs.getString("itag_interval", "15")) * 1000;
 
 
-        Log.d("LOKLIZATOR", "Pref time = "+d);
-
-        h.postDelayed(new Runnable(){
-            public void run(){
+        h.postDelayed(new Runnable() {
+            public void run() {
 
                 Set<String> keys = myGatts.keySet();
-                for(String k : keys){
-                    myGatts.get(k).readRemoteRssi();
-                }
-
+                for (String k : keys) myGatts.get(k).readRemoteRssi();
                 h.postDelayed(this, d);
             }
         }, d);
     }
 
-    //TODO: ZROBIĆ TO NA BLE NIE ZWYŁYM BT [https://www.bignerdranch.com/blog/bluetooth-low-energy-part-1/]
     public void checkBleSupport() {
-        //(☞ ͡° ͜ʖ ͡°)☞ SPRAWDZA CZY TELEFON MA BLE
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             final AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Brak BLE");
@@ -404,24 +343,11 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    public void requestBluetoothPermission() {
-        if (!(checkSelfPermission(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED)) {
-            requestPermissions(new String[]{Manifest.permission.BLUETOOTH}, PERMISSION_REQUEST_FINE_LOCATION);
-        }
-    }
+    private void adaptItagList() {
+        String[] from = new String[]{DBHelper.NAME, DBHelper.ADDRESS, DBHelper.ID};
+        int[] to = new int[]{R.id.itag_name, R.id.itag_address, R.id.if_enabled};
 
-    public void requestBluetoothAdminPermission() {
-        if (!(checkSelfPermission(Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED)) {
-            requestPermissions(new String[]{Manifest.permission.BLUETOOTH_ADMIN}, PERMISSION_REQUEST_FINE_LOCATION);
-        }
-    }
-
-    private void wypelnijListe() {
-        Log.d("LOKLIZATOR", "Wypełnij listę!");
-        String[] mapujZ = new String[]{DBHelper.NAME, DBHelper.ADDRESS, DBHelper.ID};
-        int[] mapujDo = new int[]{R.id.itag_name, R.id.itag_address, R.id.if_enabled};
-
-        cursorAdapter = new SimpleCursorAdapter(this, R.layout.selected_itag, null, mapujZ, mapujDo, 0);
+        cursorAdapter = new SimpleCursorAdapter(this, R.layout.selected_itag, null, from, to, 0);
         cursorAdapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
             @Override
             public boolean setViewValue(final View view, final Cursor cursor, int i) {
@@ -429,10 +355,12 @@ public class MainActivity extends AppCompatActivity
                 if (i == cursor.getColumnIndexOrThrow(DBHelper.ID)) {
                     final Switch s = (Switch) view;
 
-                    if (myGatts.get(cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS))) != null) s.setChecked(true);
+                    if (myGatts.get(cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS))) != null)
+                        s.setChecked(true);
                     else s.setChecked(false);
 
-                    if(view.getTag() == null) view.setTag(cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS)));
+                    if (view.getTag() == null)
+                        view.setTag(cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS)));
 
                     s.setOnClickListener(new View.OnClickListener() {
                         @Override
@@ -440,18 +368,13 @@ public class MainActivity extends AppCompatActivity
                             pressedSwitch = s;
                             switchDeviceAddress = (String) view.getTag();
                             if (s.isChecked()) {
-                                if(myGatts.get(switchDeviceAddress) == null) {
-                                    Log.d("MainAcitvity", "tag: "+(String)view.getTag());
+                                if (myGatts.get(switchDeviceAddress) == null) {
                                     switchNewDevice = false;
                                     startScan();
                                 }
-                            } else {
-                                Log.d("MainAcitvity", "switch - disconnect");
-                                disconnectDeviceSelected(switchDeviceAddress);
-                            }
+                            } else disconnectDeviceSelected(switchDeviceAddress);
                         }
                     });
-
                     return true;
                 }
                 return false;
@@ -463,14 +386,16 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-    private void kasujZaznaczone() {
+    private void removeRecords() {
         long zaznaczone[] = itagList.getCheckedItemIds();
         Cursor cursor;
         String addr = "";
         for (int i = 0; i < zaznaczone.length; ++i) {
             cursor = getContentResolver().query(ContentUris.withAppendedId(MyContentProvider.URI_ZAWARTOSCI, zaznaczone[i]), null, null, null, null);
-            if(cursor.moveToFirst()) addr = cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS));
-            if(myGatts.get(addr) != null && !myGatts.get(addr).equals("")) disconnectDeviceSelected(addr);
+            if (cursor.moveToFirst())
+                addr = cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS));
+            if (myGatts.get(addr) != null && !myGatts.get(addr).equals(""))
+                disconnectDeviceSelected(addr);
             getContentResolver().delete(ContentUris.withAppendedId(MyContentProvider.URI_ZAWARTOSCI, zaznaczone[i]), null, null);
         }
     }
@@ -485,12 +410,12 @@ public class MainActivity extends AppCompatActivity
                 addingMayFail = false;
 
             } else if (resultCode == RESULT_CANCELED) {
-                    addingMayFail = false;
-                if(data.getExtras() != null)
+                addingMayFail = false;
+                if (data.getExtras() != null)
                     disconnectDeviceSelected(data.getExtras().getString("a"));
-                }
             }
         }
+    }
 
 
     @Override
@@ -510,7 +435,6 @@ public class MainActivity extends AppCompatActivity
         cursorAdapter.swapCursor(null);
     }
 
-    //(☞ ͡° ͜ʖ ͡°)☞ CHOWAJKA PANELU WYSUWANEGO
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -521,7 +445,6 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    //(☞ ͡° ͜ʖ ͡°)☞ POKAZUJE TE OPCJE PO PRAWEJ NA TOOLBARZE
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -529,7 +452,6 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    //(☞ ͡° ͜ʖ ͡°)☞ POSZCZEGÓLNE OPCJE Z PRZYCISKU PO PRAWEJ NA TOOLBARZE
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -545,7 +467,6 @@ public class MainActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
-    //(☞ ͡° ͜ʖ ͡°)☞ POSZCZEGÓLNE OPCJE Z MENU WYSUWANEGO
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
@@ -566,7 +487,6 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    //(☞ ͡° ͜ʖ ͡°)☞ SPRAWDZA CZY PRZYZNANO PERMISSION
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch (requestCode) {
@@ -592,13 +512,9 @@ public class MainActivity extends AppCompatActivity
 
 
     public void startScan() {
-        Log.d("MainActivity", "StartScan()");
-
         linlaHeaderProgress = (LinearLayout) findViewById(R.id.linlaHeaderProgress);
         linlaHeaderProgress.setVisibility(View.VISIBLE);
-
         if (!scanningActive) {
-
             scanningActive = true;
             scannedDevicesNames.clear();
             scannedDevices.clear();
@@ -633,7 +549,7 @@ public class MainActivity extends AppCompatActivity
 
                     if (cursor.moveToFirst()) {
                         do {
-                            if (cursor.getString(cursor.getColumnIndex(DBHelper.ADDRESS)).equals(result.getDevice().getAddress()))
+                            if (cursor.getString(cursor.getColumnIndexOrThrow(DBHelper.ADDRESS)).equals(result.getDevice().getAddress()))
                                 isInDatabase = true;
                         } while (cursor.moveToNext());
                     }
@@ -643,15 +559,10 @@ public class MainActivity extends AppCompatActivity
                 if (!isInDatabase || !switchNewDevice) {
                     scannedDevices.add(result.getDevice());
                     if (result.getDevice().getName() == null || result.getDevice().getName().equals("")) {
-                        Log.d("MainActivity", "onScanResult() - new device (no name)");
                         scannedDevicesNames.add(result.getDevice().getAddress());
                     } else {
-                        Log.d("MainActivity", "onScanResult() - new iTag");
                         scannedDevicesNames.add(result.getDevice().getName());
                     }
-                    Log.d("MainActivity", "newitag = true");
-                } else {
-                    Log.d("MainActivity", "newitag = false");
                 }
             }
         }
@@ -660,7 +571,6 @@ public class MainActivity extends AppCompatActivity
 
 
     public void stopScan() {
-        Log.d("BluetoothLEService", "StopScan()");
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
@@ -669,36 +579,25 @@ public class MainActivity extends AppCompatActivity
         });
         if (switchNewDevice) {
             linlaHeaderProgress.setVisibility(View.GONE);
-            adaptujListe();
-        }
-        else findDevice();
+            createAvailableDevicesList();
+        } else findDevice();
         scanningActive = false;
     }
 
-    void adaptujListe() {
-        Log.d("MainActivity", "adaptujListe()");
-
+    void createAvailableDevicesList() {
         if (!scannedDevices.isEmpty()) {
-            Log.d("MainActivity", "devicesDiscovered nie jest empty");
-
             builder = new AlertDialog.Builder(MainActivity.this);
             builder.setTitle("Wybierz urządzenie");
-
             builder.setItems(scannedDevicesNames.toArray(new String[0]), new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     myDevices.put(scannedDevices.get(which).getAddress(), scannedDevices.get(which));
-
-                    Log.d("MainAcitvity", "connect - new itag from list");
-
                     connectToDeviceSelected(scannedDevices.get(which));
                 }
             });
-
             AlertDialog dialog = builder.create();
             dialog.show();
-        } else
-            Toast.makeText(MainActivity.this, "Nie znaleziono żadnych urządzeń!", Toast.LENGTH_SHORT).show();
+        } else Toast.makeText(MainActivity.this, "Nie znaleziono żadnych urządzeń!", Toast.LENGTH_SHORT).show();
     }
 
     public void findDevice() {
@@ -706,7 +605,6 @@ public class MainActivity extends AppCompatActivity
         for (BluetoothDevice bd : scannedDevices) {
             if (bd.getAddress().equals(switchDeviceAddress)) {
                 found = true;
-                Log.d("MainAcitvity", "connect to found device");
                 connectToDeviceSelected(bd);
             }
         }
@@ -729,28 +627,20 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-
-    //(☞ ͡° ͜ʖ ͡°)☞ POŁĄCZENIE DO URZĄDZENIA
     public void connectToDeviceSelected(BluetoothDevice bd) {
-        Log.e("MainActivity", "connectToDeviceSelected()");
         bluetoothGatt = bd.connectGatt(this, false, gattCallback);
 
-        if(myGatts.isEmpty()) {
-            Log.e("MainActivity", "myGatts jest empty");
+        if (myGatts.isEmpty()) {
             mNotifyMgr.notify(0, mBuilder.build());
             checkRange();
         }
 
-            if (switchNewDevice) {
-                Log.e("MainActivity", "switchNewDevice = true");
-                myDevices.put(bd.getAddress(), bd);
-
-                Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
-                intent.putExtra(ITAG_ACTIVITY, bd.getAddress());
-                intent.putExtra(NEW_ITAG_ACTIVITY, switchNewDevice);
-                startActivityForResult(intent, 1);
-            }
-
+        if (switchNewDevice) {
+            Intent intent = new Intent(getApplicationContext(), AddingActivity.class);
+            intent.putExtra(ITAG_ACTIVITY, bd.getAddress());
+            intent.putExtra(NEW_ITAG_ACTIVITY, switchNewDevice);
+            startActivityForResult(intent, 1);
+        }
 
         myGatts.put(bd.getAddress(), bluetoothGatt);
         myDevices.put(bd.getAddress(), bd);
@@ -766,10 +656,15 @@ public class MainActivity extends AppCompatActivity
 
             myDevices.remove(address);
 
-            if(!addingMayFail) {
-                if(pressedSwitch.isChecked()) pressedSwitch.setChecked(false);
+            if (!addingMayFail) {
+                if (pressedSwitch.isChecked()) pressedSwitch.setChecked(false);
             }
-            if(myGatts.isEmpty()) mNotifyMgr.cancel(0);
+            if (myGatts.isEmpty()) mNotifyMgr.cancel(0);
+
+            if (myGatts.isEmpty()) {
+                Log.e("MainActivity", "myGatts jest empty");
+                mNotifyMgr.cancel(0);
+            }
         }
     }
 
@@ -791,7 +686,6 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-    //(☞ ͡° ͜ʖ ͡°)☞ CALLBACK DO DEVICE CONNECT
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
 
         @Override
@@ -806,22 +700,22 @@ public class MainActivity extends AppCompatActivity
             String address = gatt.getDevice().getAddress();
             String action;
 
-            Cursor c  = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI, new String[]{DBHelper.RINGTONE, DBHelper.CLICK}, DBHelper.ADDRESS+"='"+address+"'", null,null, null);
-            if(c.moveToFirst()) Log.d("MainActivity", c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
+            Cursor c = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI, new String[]{DBHelper.RINGTONE, DBHelper.CLICK}, DBHelper.ADDRESS + "='" + address + "'", null, null, null);
+            if (c.moveToFirst())
+                Log.d("MainActivity", c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
             Uri sound = Uri.parse(c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
 
             action = c.getString(c.getColumnIndexOrThrow(DBHelper.CLICK));
             c.close();
 
 
-
             if (!ringtone) {
                 ringtone = true;
-                if(action.equals("Uruchom alarm")) startRing(address, sound);
+                if (action.equals("Uruchom alarm")) startRing(sound);
                 else startVibrate();
             } else {
                 ringtone = false;
-                if(action.equals("Uruchom alarm")) stopRing();
+                if (action.equals("Uruchom alarm")) stopRing();
                 else stopVibrate();
             }
         }
@@ -832,20 +726,18 @@ public class MainActivity extends AppCompatActivity
                 case BluetoothProfile.STATE_CONNECTED:
                     gatt.discoverServices();
                     Log.d("MainActivity", "POŁĄCZONO Z " + gatt.getDevice().getAddress());
-                    //cursorAdapter.notifyDataSetChanged();
 
                     break;
 
                 case BluetoothProfile.STATE_DISCONNECTED:
                     Log.d("MainActivity", "ROZŁĄCZONO Z " + gatt.getDevice().getAddress());
-                    //cursorAdapter.notifyDataSetChanged();
 
                     break;
 
                 default:
                     MainActivity.this.runOnUiThread(new Runnable() {
                         public void run() {
-                            //peripheralTextView.append("we encounterned an unknown state, uh oh\n");
+                            Log.d("MainActivity", "Nieznany stan urządzenia " + gatt.getDevice().getAddress());
                         }
                     });
                     break;
@@ -855,16 +747,10 @@ public class MainActivity extends AppCompatActivity
         @Override
         public void onServicesDiscovered(final BluetoothGatt gatt, final int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                // this will get called after the client initiates a luetoothGatt.discoverServices() call
-
-
                 Log.d("MainActivity", "onServicesDiscovered()");
 
-
                 for (BluetoothGattService gattService : gatt.getServices()) {
-
                     List<BluetoothGattCharacteristic> gattCharacteristics = gattService.getCharacteristics();
-
                     for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
 
                         for (BluetoothGattDescriptor descriptor : gattCharacteristic.getDescriptors()) {
@@ -874,17 +760,12 @@ public class MainActivity extends AppCompatActivity
                             }
                         }
                         gatt.setCharacteristicNotification(gattCharacteristic, true);
-
-
                     }
                 }
-            } else {
-                // failure
             }
         }
 
         @Override
-        // Result of a characteristic read operation
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic,
                                          int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -893,13 +774,13 @@ public class MainActivity extends AppCompatActivity
 
                 UUID uuid = characteristic.getUuid();
 
-                if(uuid.toString().equals(CHAR_BATTERY_LEVEL_UUID.toString())) {
+                if (uuid.toString().equals(CHAR_BATTERY_LEVEL_UUID.toString())) {
 
                     byte[] x = characteristic.getValue();
                     int uint8 = convertByteToInt(x);
 
                     Log.d("MainActivity", "X");
-                    Log.d("MainActivity", "X = "+uint8);
+                    Log.d("MainActivity", "X = " + uint8);
                 }
             }
         }
@@ -914,51 +795,42 @@ public class MainActivity extends AppCompatActivity
         }
 
 
-
-
-
         @Override
-        public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status){
+        public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
 
                 int dist = 0;
                 String addr = gatt.getDevice().getAddress();
                 Uri uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
                 String tryb = "";
-                Cursor c  = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI,
+                Cursor c = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI,
                         new String[]{DBHelper.NAME, DBHelper.DISTANCE, DBHelper.RINGTONE, DBHelper.WORKING_MODE},
-                        DBHelper.ADDRESS+"='"+addr+"'", null,null, null);
-                if(c.getCount() == 0) {
+                        DBHelper.ADDRESS + "='" + addr + "'", null, null, null);
+                if (c.getCount() == 0) {
                     c.close();
                     return;
                 }
-                if(c.moveToFirst()) {
+                if (c.moveToFirst()) {
                     dist = Integer.parseInt(c.getString(c.getColumnIndexOrThrow(DBHelper.DISTANCE)));
                     uri = Uri.parse(c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
                     tryb = c.getString(c.getColumnIndexOrThrow(DBHelper.WORKING_MODE));
                 }
-                Log.d("MainActivity", String.valueOf(dist));
 
                 prefs = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
                 trybCichy = prefs.getBoolean("switch", false);
-                if(trybCichy) trybCichy = prefs.getBoolean("tryb_cichy", false);
+                if (trybCichy) trybCichy = prefs.getBoolean("tryb_cichy", false);
 
-                Log.d("MainActivity", "SWITCHH "+trybCichy);
-
-
-
-                Log.d("MainActivity", "BluetoothGatt ReadRssi"+rssi);
-
-                if(Math.abs(rssi) > dist) {
+                if (Math.abs(rssi) > dist) {
 
                     mBuilder2 = new NotificationCompat.Builder(MainActivity.this)
                             .setSmallIcon(R.mipmap.ic_launcher)
                             .setContentTitle("Lokalizator 3044")
-                            .setContentText("Urządzenie "+c.getString(c.getColumnIndexOrThrow(DBHelper.NAME))+" jest poza zasięgiem!");
+                            .setContentText("Urządzenie " + c.getString(c.getColumnIndexOrThrow(DBHelper.NAME)) + " jest poza zasięgiem!");
 
-                    if(trybCichy) Toast.makeText(MainActivity.this, "tryb cichy", Toast.LENGTH_LONG).show();
+                    if (trybCichy)
+                        Toast.makeText(MainActivity.this, "tryb cichy", Toast.LENGTH_LONG).show();
 
-                    if(tryb.equals("Tryb głośny"))
+                    if (tryb.equals("Tryb głośny"))
                         mBuilder2.setSound(uri);
                     mNotifyMgr.notify(1, mBuilder2.build());
                 }
@@ -967,10 +839,9 @@ public class MainActivity extends AppCompatActivity
         }
     };
 
-    public int convertByteToInt(byte[] b)
-    {
-        int value= 0;
-        for(int i=0; i<b.length; i++)
+    public int convertByteToInt(byte[] b) {
+        int value = 0;
+        for (int i = 0; i < b.length; i++)
             value = (value << 8) | b[i];
         return value;
     }
@@ -979,18 +850,15 @@ public class MainActivity extends AppCompatActivity
         System.out.println(characteristic.getUuid());
     }
 
-    private void startRing(String addr, Uri sound) {
-        Log.d("sylwka", "startRing()");
+    private void startRing(Uri sound) {
         if (currentRingtone != null) {
             currentRingtone.stop();
             currentRingtone = null;
         }
 
-        //Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
         currentRingtone = RingtoneManager.getRingtone(this, sound);
 
         if (currentRingtone == null) {
-            Log.d("sylwka", "R.string.ring_tone_not_found");
             return;
         }
 
@@ -1002,7 +870,6 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void stopRing() {
-        Log.d("sylwka", "stopRing()");
         if (currentRingtone != null) {
             currentRingtone.stop();
         }
@@ -1011,9 +878,8 @@ public class MainActivity extends AppCompatActivity
     private void startVibrate() {
         v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
-
-        long pattern[] = {50,100,100,250,150,350};
-        v.vibrate(pattern,3);
+        long pattern[] = {50, 100, 100, 250, 150, 350};
+        v.vibrate(pattern, 3);
     }
 
     private void stopVibrate() {
