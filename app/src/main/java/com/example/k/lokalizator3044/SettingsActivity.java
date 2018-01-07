@@ -24,11 +24,8 @@ public class SettingsActivity extends AppCompatActivity
 
         setContentView(R.layout.activity_main_no_fab);
 
-
         //(☞ ͡° ͜ʖ ͡°)☞ USTAWIENIA WIDOCZKÓFF
         findViewById(R.id.about_content).setVisibility(View.GONE);
-        //findViewById(R.id.settings_content).setVisibility(View.VISIBLE);
-
 
         //(☞ ͡° ͜ʖ ͡°)☞ TOOLBAR - TEN PASEK NA GÓRZE
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -43,10 +40,6 @@ public class SettingsActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-
-
-
-
     }
 
     //(☞ ͡° ͜ʖ ͡°)☞ CHOWAJKA WYSUWANEGO PANELU

@@ -83,6 +83,7 @@ public class MainActivity extends AppCompatActivity
 
     ListView itagList;
     AlertDialog.Builder builder;
+    AlertDialog.Builder disconnectedBuilder;
     BluetoothGatt bluetoothGatt;
     BluetoothGattCharacteristic bc;
     boolean addingMayFail;
@@ -108,6 +109,7 @@ public class MainActivity extends AppCompatActivity
     boolean trybCichy = false;
     SharedPreferences prefs;
     GPSTracker gps = new GPSTracker(this);
+    boolean controlledDisconnect = false;
 
     /**
      * STATIC VALUES
@@ -650,6 +652,8 @@ public class MainActivity extends AppCompatActivity
 
     public void disconnectDeviceSelected(String address) {
         Log.d("MainActivity", "disconnectDeviceSelected()");
+        controlledDisconnect = true;
+
         if (myGatts.get(address) != null) {
             myGatts.get(address).disconnect();
             myGatts.remove(address);
@@ -727,6 +731,30 @@ public class MainActivity extends AppCompatActivity
                 case BluetoothProfile.STATE_DISCONNECTED:
                     Log.d("MainActivity", "ROZŁĄCZONO Z " + gatt.getDevice().getAddress());
 
+//                    if(!controlledDisconnect && myDevices.get(gatt.getDevice().getAddress()) != null) {
+//                        controlledDisconnect = false;
+//
+//                        String address = gatt.getDevice().getAddress();
+//                        Uri sound = null;
+//                        String name = "";
+//                        Cursor c = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI, new String[]{DBHelper.RINGTONE, DBHelper.NAME}, DBHelper.ADDRESS + "='" + address + "'", null, null, null);
+//                        if (c.moveToFirst()) {
+//                            sound = Uri.parse(c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
+//                            name = c.getString(c.getColumnIndexOrThrow(DBHelper.NAME));
+//                        }
+//                        c.close();
+//
+//                        startRing(sound);
+//
+//                        disconnectedBuilder = new AlertDialog.Builder(MainActivity.this);
+//                        disconnectedBuilder.setTitle("Stracono połączenie z urządzeniem "+name+"!")
+//                                .setNeutralButton("OK", new DialogInterface.OnClickListener() {
+//                                    @Override
+//                                    public void onClick(DialogInterface dialog, int which) {
+//                                        stopRing();
+//                                    }
+//                                });
+//                    }
                     break;
 
                 default:
@@ -778,15 +806,6 @@ public class MainActivity extends AppCompatActivity
                     Log.d("MainActivity", "X = " + uint8);
                 }
             }
-        }
-
-        @Override
-        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-
-            runOnUiThread(new Runnable() {
-                public void run() {
-                }
-            });
         }
 
 

@@ -53,9 +53,14 @@ public class ItagSettingFragment extends PreferenceFragmentCompat {
             @Override
             public boolean onPreferenceChange(Preference preference, Object newValue) {
                 ((AddingActivity)getActivity()).name = newValue.toString();
-                if(!newValue.equals("")) preference.setSummary(newValue.toString());
-                else preference.setSummary("Wpisz nazwę urządzenia");
-                return true;
+                if(newValue != null && !newValue.equals("")) {
+                    preference.setSummary(newValue.toString());
+                    return true;
+                } else {
+                    preference.setSummary("Wpisz nazwę urządzenia");
+                    return true;
+                }
+
             }
         });
 
@@ -79,10 +84,11 @@ public class ItagSettingFragment extends PreferenceFragmentCompat {
                 Intent intent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
                 intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM);
                 intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Select Ringtone");
-                if (((AddingActivity)getActivity()).ringtone != null)
+                if (((AddingActivity)getActivity()).ringtone != null) {
                     intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, Uri.parse(((AddingActivity)getActivity()).ringtone));
-                else intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, (Uri) null);
-
+                } else {
+                    intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, (Uri) null);
+                }
                 startActivityForResult(intent, RINGTONE_REQUEST);
                 return true;
             }
@@ -127,7 +133,9 @@ public class ItagSettingFragment extends PreferenceFragmentCompat {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.d("tag", "AAAAAAAAAAAAAAAAAAAAAAAA");
         if (requestCode == RINGTONE_REQUEST && resultCode == RESULT_OK) {
+
             Uri uri = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
 
             if (uri == null) Log.d("tag", "nie ma uri");
