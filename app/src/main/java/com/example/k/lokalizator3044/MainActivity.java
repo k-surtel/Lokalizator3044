@@ -754,6 +754,9 @@ public class MainActivity extends AppCompatActivity
                                         stopRing();
                                     }
                                 });
+
+                        AlertDialog dialog = disconnectedBuilder.create();
+                        dialog.show();
                     }
                     break;
 
