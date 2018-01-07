@@ -133,7 +133,6 @@ public class ItagSettingFragment extends PreferenceFragmentCompat {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.d("tag", "AAAAAAAAAAAAAAAAAAAAAAAA");
         if (requestCode == RINGTONE_REQUEST && resultCode == RESULT_OK) {
 
             Uri uri = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);

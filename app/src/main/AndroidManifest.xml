@@ -44,7 +44,6 @@
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".AddingActivity"
-            android:launchMode="singleInstance"
             android:configChanges="orientation|screenSize" />
 
         <provider

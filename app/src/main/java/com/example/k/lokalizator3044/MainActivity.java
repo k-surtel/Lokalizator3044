@@ -731,30 +731,30 @@ public class MainActivity extends AppCompatActivity
                 case BluetoothProfile.STATE_DISCONNECTED:
                     Log.d("MainActivity", "ROZŁĄCZONO Z " + gatt.getDevice().getAddress());
 
-//                    if(!controlledDisconnect && myDevices.get(gatt.getDevice().getAddress()) != null) {
-//                        controlledDisconnect = false;
-//
-//                        String address = gatt.getDevice().getAddress();
-//                        Uri sound = null;
-//                        String name = "";
-//                        Cursor c = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI, new String[]{DBHelper.RINGTONE, DBHelper.NAME}, DBHelper.ADDRESS + "='" + address + "'", null, null, null);
-//                        if (c.moveToFirst()) {
-//                            sound = Uri.parse(c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
-//                            name = c.getString(c.getColumnIndexOrThrow(DBHelper.NAME));
-//                        }
-//                        c.close();
-//
-//                        startRing(sound);
-//
-//                        disconnectedBuilder = new AlertDialog.Builder(MainActivity.this);
-//                        disconnectedBuilder.setTitle("Stracono połączenie z urządzeniem "+name+"!")
-//                                .setNeutralButton("OK", new DialogInterface.OnClickListener() {
-//                                    @Override
-//                                    public void onClick(DialogInterface dialog, int which) {
-//                                        stopRing();
-//                                    }
-//                                });
-//                    }
+                    if(!controlledDisconnect && myDevices.get(gatt.getDevice().getAddress()) != null) {
+                        controlledDisconnect = false;
+
+                        String address = gatt.getDevice().getAddress();
+                        Uri sound = null;
+                        String name = "";
+                        Cursor c = getContentResolver().query(MyContentProvider.URI_ZAWARTOSCI, new String[]{DBHelper.RINGTONE, DBHelper.NAME}, DBHelper.ADDRESS + "='" + address + "'", null, null, null);
+                        if (c.moveToFirst()) {
+                            sound = Uri.parse(c.getString(c.getColumnIndexOrThrow(DBHelper.RINGTONE)));
+                            name = c.getString(c.getColumnIndexOrThrow(DBHelper.NAME));
+                        }
+                        c.close();
+
+                        startRing(sound);
+
+                        disconnectedBuilder = new AlertDialog.Builder(MainActivity.this);
+                        disconnectedBuilder.setTitle("Stracono połączenie z urządzeniem "+name+"!")
+                                .setNeutralButton("OK", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        stopRing();
+                                    }
+                                });
+                    }
                     break;
 
                 default:
